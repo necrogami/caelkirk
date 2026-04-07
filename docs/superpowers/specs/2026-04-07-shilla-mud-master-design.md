@@ -42,7 +42,7 @@ This is a rebuild of the [necrogami/mud](https://github.com/necrogami/mud) proje
 
 ## Sub-Project Decomposition
 
-The project is too large for a single implementation cycle. It is decomposed into 11 sub-projects, each building on the previous. Each sub-project gets its own spec, plan, and implementation cycle.
+The project is too large for a single implementation cycle. It is decomposed into 12 sub-projects, each building on the previous. Each sub-project gets its own spec, plan, and implementation cycle.
 
 ### Build Order
 
