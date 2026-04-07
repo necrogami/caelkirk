@@ -37,7 +37,8 @@ This is a rebuild of the [necrogami/mud](https://github.com/necrogami/mud) proje
 | **Multiplayer** | Shared persistent world. Players see each other in rooms, can group, trade, chat |
 | **PvP** | Zone-based. Most of the world is safe (no PvP). Designated regions/zones are PvP-enabled. Duels available anywhere by mutual consent |
 | **World building** | Builder/immortal role system — trusted players get permissions to create content. Procedural generation for some areas (random dungeons, wilderness) |
-| **Scope** | Full traditional MUD: classes, races, stats, levels, equipment, mobs, quests, crafting, guilds/clans, shops, economy |
+| **Housing** | Three-tier system: personal pocket dimension (portable storage/crafting space), world-integrated housing (physical buildings in towns/neighborhoods), and guild housing (instanced halls + world presence + territory control) |
+| **Scope** | Full traditional MUD: classes, races, stats, levels, equipment, mobs, quests, crafting, guilds/clans, shops, economy, player/guild housing |
 
 ## Sub-Project Decomposition
 
@@ -55,8 +56,9 @@ The project is too large for a single implementation cycle. It is decomposed int
              └──> 7. Shops & Economy
                   └──> 8. Quests
                        └──> 9. Crafting
-        └──> 10. Guilds & PvP
-   └──> 11. Builder Tools (can start after World Engine, grows with each sub-project)
+        └──> 10. Housing (requires World Engine + Character System + Shops/Economy)
+        └──> 11. Guilds, Territory & PvP (requires Housing for territory mechanics)
+   └──> 12. Builder Tools (can start after World Engine, grows with each sub-project)
 ```
 
 ### Sub-Project Summaries
@@ -88,10 +90,26 @@ Quest definitions — objectives (kill X, collect Y, deliver Z, explore location
 #### 9. Crafting
 Gathering skills/nodes (mining, herbalism, etc.) tied to rooms. Recipe system — ingredients + skill level = output. Crafting UI. Profession/skill progression. Crafted items feeding into the equipment and economy systems.
 
-#### 10. Guilds & PvP
-Guild/clan creation and management. Guild chat channel. Guild roster and ranks. PvP zone mechanics — flagging, combat rules in PvP zones. Duel system — challenge and accept. Arena system for structured PvP. Leaderboards.
+#### 10. Housing
+Three-tier housing system:
 
-#### 11. Builder Tools
+**Personal Pocket** — a portable instanced space every player carries. Always accessible regardless of location. Contains personal storage vault, crafting bench, and rest area. Functions like a "bag of holding" that's an actual room. Not tied to any world location.
+
+**World Housing** — physical buildings in towns and neighborhood zones. Players buy or claim a plot, and the house exists as real rooms in the game world. Other players can see the building, knock on the door, or be invited in. Can range from a single room to a multi-room estate. Decorating and furniture.
+
+**Guild Housing** — see sub-project 11. Guild housing is part of the guild system since it ties into territory control.
+
+#### 11. Guilds, Territory & PvP
+Guild/clan creation and management. Guild chat channel. Guild roster and ranks.
+
+**Guild Housing** — three tiers that guilds can progress through:
+- *Guild Hall* — instanced functional space with shared vault, armory, meeting hall, crafting stations. Available to any guild.
+- *World Presence* — a physical guild building in a town, functioning like player housing but larger and shared. Requires wealth/reputation.
+- *Territory Control* — guilds can capture or claim zones/fortresses in the world. Claimed territory becomes guild-controlled with PvP implications for defense. Territory ties into the PvP zone system — guild-held territory IS PvP-enabled territory.
+
+**PvP Systems** — zone-based PvP mechanics, flagging, combat rules in PvP/territory zones. Duel system (challenge and accept, available anywhere). Arena system for structured PvP. Leaderboards.
+
+#### 12. Builder Tools
 Builder/immortal permission tier. Admin panel for zone/room/mob/item/quest CRUD. In-game building commands for builders. Room editor with live preview. Mob/item template editor. Procedural generation tools — dungeon generators, wilderness filling. World validation tools (orphaned rooms, broken links, unreachable areas).
 
 ## Architecture Notes
@@ -111,7 +129,8 @@ app/
   shop/             # NPC shops, currency, trading
   quest/            # Quest definitions, tracking, dialogue
   crafting/         # Gathering, recipes, professions
-  guild/            # Guilds, PvP zones, duels, arenas
+  housing/          # Personal pocket, world housing, furniture, decoration
+  guild/            # Guilds, territory control, guild housing, PvP zones, duels, arenas
   admin/            # Builder tools, admin panel, procedural generation
 ```
 
@@ -119,7 +138,7 @@ app/
 
 - Game events are published to PostgreSQL PubSub channels scoped by context (room, zone, party, player)
 - SSE endpoints stream events to each connected player
-- Channel examples: `room.{id}` (room activity), `player.{id}` (personal events), `party.{id}` (group events), `zone.{id}` (zone-wide announcements), `global` (server-wide)
+- Channel examples: `room.{id}` (room activity), `player.{id}` (personal events), `party.{id}` (group events), `zone.{id}` (zone-wide announcements), `guild.{id}` (guild events/territory alerts), `global` (server-wide)
 - When a player moves rooms, the client reconnects to the new room's SSE stream (or the server manages channel subscriptions)
 
 ### Key Improvements Over Previous Version
