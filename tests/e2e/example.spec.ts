@@ -1,4 +1,9 @@
-import { test, expect, Page } from '@playwright/test';
+// Use CDP setup when USE_CDP=1, otherwise default Playwright
+const useCdp = process.env.USE_CDP === '1';
+const { test, expect } = useCdp
+  ? require('./cdp-setup')
+  : require('@playwright/test');
+import type { Page } from '@playwright/test';
 
 // Helper: register a fresh user and return the page (logged in at /game)
 async function registerUser(page: Page, username: string, email: string, password: string) {

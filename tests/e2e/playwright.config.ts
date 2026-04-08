@@ -12,11 +12,9 @@ export default defineConfig({
       name: 'chromium',
       use: {
         browserName: 'chromium',
-        // When running in WSL2 against Windows Brave, set CDP_ENDPOINT:
-        // CDP_ENDPOINT=ws://172.19.64.1:9333/devtools/browser/{id} npx playwright test
-        ...(process.env.CDP_ENDPOINT
-          ? { cdpUrl: process.env.CDP_ENDPOINT }
-          : { launchOptions: { headless: true } }),
+        launchOptions: {
+          headless: true,
+        },
       },
     },
   ],
