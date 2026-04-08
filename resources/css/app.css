@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  /* Twilight theme - background surfaces */
+  --color-twilight-bg: #20202a;
+  --color-twilight-surface: #282834;
+  --color-twilight-elevated: #2e2e3a;
+  --color-twilight-border: #3a3a4a;
+  --color-twilight-border-light: #44444e;
+
+  /* Text */
+  --color-text-primary: #c0c4d8;
+  --color-text-secondary: #7878a0;
+  --color-text-muted: #5a5a70;
+
+  /* Accent */
+  --color-accent: #5a6aaa;
+  --color-accent-hover: #7e8ec0;
+  --color-accent-bright: #8a9ad0;
+
+  /* Game stats */
+  --color-health: #e05050;
+  --color-health-dark: #c04040;
+  --color-mana: #5080e0;
+  --color-mana-dark: #6a6ab8;
+  --color-stamina: #50c070;
+  --color-stamina-dark: #4a9e6a;
+
+  /* Semantic */
+  --color-gold: #c0a050;
+  --color-danger: #aa6a6a;
+  --color-player-name: #6aaa80;
+  --color-npc-name: #7e8ec0;
+  --color-system-msg: #aa8a4a;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-twilight-bg);
+    color: var(--color-text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}

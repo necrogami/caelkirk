@@ -1,0 +1,13 @@
+{
+  "name": "shilla",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i resources/css/app.css -o public/css/app.css --minify",
+    "dev:css": "npx @tailwindcss/cli -i resources/css/app.css -o public/css/app.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  }
+}
