@@ -163,8 +163,8 @@
     <script src="/js/command-palette.js"></script>
     {block scripts}
     {if isset($user)}
-    <script>
-        ShillaSSE.setPlayerChannel('player.{$user->id}');
+    <script data-player-id="{$user->id}">
+        ShillaSSE.setPlayerChannel('player.' + document.currentScript.dataset.playerId);
         ShillaSSE.connect('/game/stream');
     </script>
     {/if}

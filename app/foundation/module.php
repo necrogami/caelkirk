@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Foundation\Provider\DatabaseUserProvider;
 use App\Foundation\Repository\UserRepository;
 use App\Foundation\Repository\PlayerRepository;
 use App\Foundation\Repository\SocialAccountRepository;
@@ -11,9 +12,12 @@ use App\Foundation\Service\ConfigService;
 use App\Foundation\Service\PlayerService;
 use App\Foundation\Service\SocialAuthService;
 use App\Foundation\Service\CommandRegistry;
+use Marko\Authentication\Contracts\UserProviderInterface;
 
 return [
-    'bindings' => [],
+    'bindings' => [
+        UserProviderInterface::class => DatabaseUserProvider::class,
+    ],
     'singletons' => [
         UserRepository::class,
         PlayerRepository::class,
