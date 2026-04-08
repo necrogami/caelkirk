@@ -56,6 +56,14 @@ $entity->createdAt = new \DateTimeImmutable();
 $repository->save($entity);
 ```
 
+### Missing Framework Tables
+
+Some Marko packages (e.g., `marko/admin-auth`, `marko/session-database`) expect tables that they don't define as entities. We define these in `app/foundation/src/Entity/` so `db:migrate` handles them:
+- `AdminUserRole` — junction table for `admin_user_roles`
+- `Session` — session storage for `sessions`
+
+If a package's raw SQL references a table that doesn't exist, create an entity for it.
+
 ### String Primary Keys
 
 The `SystemConfigRepository` uses raw SQL for insert/update because `EntityHydrator::isNew()` checks if the PK is null — string PKs are always set before save, so the hydrator thinks it's an update. See `SystemConfigRepository::setValue()` for the pattern.
