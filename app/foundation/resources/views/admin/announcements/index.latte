@@ -1,0 +1,33 @@
+<div class="flex justify-between items-center mb-4">
+    <h2 class="text-lg font-semibold">Announcements</h2>
+    <a href="/admin/announcements/create" class="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded transition-colors duration-150">New Announcement</a>
+</div>
+
+<div class="bg-[#24242e] border border-twilight-border rounded-md overflow-hidden">
+    {foreach $announcements as $a}
+    <div class="px-4 py-3 border-b border-[#2e2e3a] flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-text-primary font-medium">{$a->title}</span>
+                {if $a->type === 'warning'}
+                <span class="bg-gold/20 text-gold text-xs px-1.5 py-0.5 rounded">warning</span>
+                {elseif $a->type === 'maintenance'}
+                <span class="bg-danger/20 text-danger text-xs px-1.5 py-0.5 rounded">maintenance</span>
+                {else}
+                <span class="bg-accent/20 text-accent text-xs px-1.5 py-0.5 rounded">info</span>
+                {/if}
+                {if !$a->active}
+                <span class="text-text-muted text-xs">(inactive)</span>
+                {/if}
+            </div>
+            <div class="text-xs text-text-muted mt-0.5">{$a->createdAt->format('M j, Y H:i')}</div>
+        </div>
+        <div class="flex gap-2">
+            <a href="/admin/announcements/{$a->id}/edit" class="text-accent text-xs hover:text-accent-hover">Edit</a>
+        </div>
+    </div>
+    {/foreach}
+    {if count($announcements) === 0}
+    <div class="px-4 py-6 text-center text-text-muted text-sm">No announcements</div>
+    {/if}
+</div>

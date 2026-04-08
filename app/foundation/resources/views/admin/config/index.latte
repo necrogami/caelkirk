@@ -1,0 +1,22 @@
+<h2 class="text-lg font-semibold mb-4">System Configuration</h2>
+
+<form method="POST" action="/admin/config" class="bg-[#24242e] border border-twilight-border rounded-md p-4 space-y-4 max-w-lg">
+    <div>
+        <label for="character_slot_default" class="block text-xs text-text-muted mb-1">Default Character Slot Limit</label>
+        <input type="number" name="character_slot_default" id="character_slot_default" value="{$config['character_slot_default']}"
+               class="w-full bg-[#22222c] border border-twilight-border rounded px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+               min="1" max="100">
+        <p class="text-xs text-text-muted mt-1">Default number of character slots for new users.</p>
+    </div>
+
+    <div>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="maintenance_mode" value="1" {if $config['maintenance_mode']}checked{/if}
+                   class="rounded border-twilight-border bg-[#22222c] text-accent focus:ring-accent">
+            <span class="text-sm text-text-primary">Maintenance Mode</span>
+        </label>
+        <p class="text-xs text-text-muted mt-1">When enabled, non-admin users cannot access the game.</p>
+    </div>
+
+    <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded transition-colors duration-150">Save Configuration</button>
+</form>
