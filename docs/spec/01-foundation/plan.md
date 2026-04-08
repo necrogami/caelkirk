@@ -3258,3 +3258,38 @@ Verify:
 git add -A
 git commit -m "Foundation complete: all systems verified"
 ```
+
+---
+
+## Task 22: Session & Auth Wiring
+
+**Added post-implementation:** The original plan missed the config files and UserProvider needed to make auth sessions actually persist through redirects.
+
+**Files:**
+- Create: `config/session.php`
+- Create: `config/authentication.php`
+- Create: `app/foundation/src/Provider/DatabaseUserProvider.php`
+- Modify: `app/foundation/module.php` (bind UserProviderInterface)
+- Modify: `app/foundation/resources/views/layout/game.latte` (fix Latte JS variable)
+
+- [x] **Step 1: Create `config/session.php`**
+
+Database session driver, 24h lifetime, `shilla_session` cookie name.
+
+- [x] **Step 2: Create `config/authentication.php`**
+
+Session guard as default, argon2id password driver.
+
+- [x] **Step 3: Create `DatabaseUserProvider`**
+
+Bridges `UserRepository` to `UserProviderInterface` — implements `retrieveById`, `retrieveByCredentials`, `validateCredentials`, `retrieveByRememberToken`, `updateRememberToken`.
+
+- [x] **Step 4: Bind `UserProviderInterface` in `module.php`**
+
+- [x] **Step 5: Fix Latte JS variable output**
+
+Latte doesn't allow `{$var}` inside JavaScript strings. Use `data-` attributes on the `<script>` tag instead.
+
+- [x] **Step 6: Verify end-to-end**
+
+Register → redirect to `/game` → game shell renders with session authenticated.
