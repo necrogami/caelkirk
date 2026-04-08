@@ -30,7 +30,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\Foundation\\": "app/foundation/src/"
+            "App\\Foundation\\": "app/foundation/src/",
+            "App\\Foundation\\Seed\\": "app/foundation/Seed/"
         }
     },
     "autoload-dev": {

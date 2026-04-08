@@ -21,18 +21,19 @@ class SystemConfigRepository extends Repository
 
     public function setValue(string $key, string $value): void
     {
+        $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
         $existing = $this->findOneBy(['key' => $key]);
 
         if ($existing !== null) {
-            $existing->value = $value;
-            $existing->updatedAt = new DateTimeImmutable();
-            $this->save($existing);
+            $this->connection->execute(
+                'UPDATE system_config SET value = ?, updated_at = ? WHERE key = ?',
+                [$value, $now, $key],
+            );
         } else {
-            $config = new SystemConfig();
-            $config->key = $key;
-            $config->value = $value;
-            $config->updatedAt = new DateTimeImmutable();
-            $this->save($config);
+            $this->connection->execute(
+                'INSERT INTO system_config (key, value, updated_at) VALUES (?, ?, ?)',
+                [$key, $value, $now],
+            );
         }
     }
 
