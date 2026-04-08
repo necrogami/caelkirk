@@ -76,7 +76,7 @@ readonly class FoundationSeeder implements SeederInterface
         $testUsers = [
             ['username' => 'testplayer', 'email' => 'player@shilla.org', 'role' => 'player'],
             ['username' => 'testbuilder', 'email' => 'builder@shilla.org', 'role' => 'builder'],
-            ['username' => 'testadmin', 'email' => 'admin-game@shilla.org', 'role' => 'admin'],
+            ['username' => 'testadmin', 'email' => 'admin@shilla.org', 'role' => 'admin'],
         ];
 
         foreach ($testUsers as $data) {
