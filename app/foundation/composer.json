@@ -1,0 +1,14 @@
+{
+    "name": "app/foundation",
+    "type": "marko-module",
+    "autoload": {
+        "psr-4": {
+            "App\\Foundation\\": "src/"
+        }
+    },
+    "extra": {
+        "marko": {
+            "module": true
+        }
+    }
+}
