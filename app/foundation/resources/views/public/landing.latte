@@ -1,0 +1,33 @@
+{layout 'foundation::layout/public'}
+
+{block title}Shilla — A Browser-Based MUD{/block}
+
+{block content}
+<div class="py-16 text-center">
+    <h1 class="text-[32px] font-semibold tracking-tight leading-tight text-text-primary">
+        Enter a World of Swords<br>and Sorcery
+    </h1>
+    <p class="mt-4 text-lg text-text-secondary max-w-lg mx-auto">
+        Shilla is a high-fantasy MUD played in your browser. Explore dungeons, battle monsters, forge equipment, and build your legacy.
+    </p>
+    <div class="mt-8 flex items-center justify-center gap-4">
+        <a href="/register" class="bg-accent hover:bg-accent-hover text-white font-medium px-6 py-2.5 rounded-md transition-colors duration-150">Start Your Adventure</a>
+        <a href="/about" class="text-text-secondary hover:text-text-primary font-medium px-4 py-2.5 transition-colors duration-150">Learn More &rarr;</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-3 gap-6 mt-8">
+    <div class="bg-twilight-surface border border-twilight-border rounded-md p-6">
+        <h3 class="font-semibold text-text-primary mb-2">Visual Rooms</h3>
+        <p class="text-sm text-text-secondary">Every room is rendered as HTML. See creatures, items, and other players — not just text.</p>
+    </div>
+    <div class="bg-twilight-surface border border-twilight-border rounded-md p-6">
+        <h3 class="font-semibold text-text-primary mb-2">Turn-Based Combat</h3>
+        <p class="text-sm text-text-secondary">Tactical battles with abilities, spells, and status effects. Think, then strike.</p>
+    </div>
+    <div class="bg-twilight-surface border border-twilight-border rounded-md p-6">
+        <h3 class="font-semibold text-text-primary mb-2">Living World</h3>
+        <p class="text-sm text-text-secondary">Guilds, housing, crafting, quests, and a player-driven economy. Your choices shape the world.</p>
+    </div>
+</div>
+{/block}
