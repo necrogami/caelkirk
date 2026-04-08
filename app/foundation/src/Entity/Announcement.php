@@ -13,7 +13,7 @@ use Marko\Database\Entity\Entity;
 class Announcement extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
-    public int $id;
+    public ?int $id = null;
 
     #[Column(length: 255)]
     public string $title;
@@ -34,5 +34,5 @@ class Announcement extends Entity
     public ?DateTimeImmutable $endsAt = null;
 
     #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
-    public DateTimeImmutable $createdAt;
+    public ?DateTimeImmutable $createdAt = null;
 }

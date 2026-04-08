@@ -15,7 +15,7 @@ use Marko\Database\Entity\Entity;
 class SocialAccount extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
-    public int $id;
+    public ?int $id = null;
 
     #[Column(name: 'user_id', references: 'users.id', onDelete: 'cascade')]
     public int $userId;
@@ -36,5 +36,5 @@ class SocialAccount extends Entity
     public ?string $refreshToken = null;
 
     #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
-    public DateTimeImmutable $createdAt;
+    public ?DateTimeImmutable $createdAt = null;
 }

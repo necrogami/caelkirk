@@ -13,7 +13,7 @@ use Marko\Database\Entity\Entity;
 class Player extends Entity
 {
     #[Column(primaryKey: true, autoIncrement: true)]
-    public int $id;
+    public ?int $id = null;
 
     #[Column(name: 'user_id', references: 'users.id', onDelete: 'cascade')]
     public int $userId;
@@ -25,7 +25,7 @@ class Player extends Entity
     public int $slotNumber;
 
     #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
-    public DateTimeImmutable $createdAt;
+    public ?DateTimeImmutable $createdAt = null;
 
     #[Column(name: 'updated_at')]
     public ?DateTimeImmutable $updatedAt = null;

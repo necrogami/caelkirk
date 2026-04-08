@@ -69,6 +69,7 @@ class RegisterController
         $user->username = $data['username'];
         $user->email = $data['email'];
         $user->password = $this->hasher->hash($data['password']);
+        $user->createdAt = new \DateTimeImmutable();
         $this->userRepository->save($user);
 
         $this->guard->login($user);

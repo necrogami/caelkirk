@@ -65,6 +65,7 @@ class SocialAuthService
         $user = new User();
         $user->username = $this->generateUniqueUsername($displayName);
         $user->email = $email ?? "{$provider}_{$providerId}@social.local";
+        $user->createdAt = new \DateTimeImmutable();
         $this->userRepository->save($user);
 
         $this->createSocialLink($user->id, $provider, $profile);
@@ -146,6 +147,7 @@ class SocialAuthService
         $account->providerEmail = $profile['email'] ?? null;
         $account->accessToken = $profile['access_token'] ?? null;
         $account->refreshToken = $profile['refresh_token'] ?? null;
+        $account->createdAt = new \DateTimeImmutable();
         $this->socialAccountRepository->save($account);
     }
 

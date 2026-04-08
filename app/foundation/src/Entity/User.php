@@ -15,7 +15,7 @@ use Marko\Database\Entity\Entity;
 class User extends Entity implements AuthenticatableInterface, AuthorizableInterface
 {
     #[Column(primaryKey: true, autoIncrement: true)]
-    public int $id;
+    public ?int $id = null;
 
     #[Column(length: 50, unique: true)]
     public string $username;
@@ -42,7 +42,7 @@ class User extends Entity implements AuthenticatableInterface, AuthorizableInter
     public ?DateTimeImmutable $bannedAt = null;
 
     #[Column(name: 'created_at', default: 'CURRENT_TIMESTAMP')]
-    public DateTimeImmutable $createdAt;
+    public ?DateTimeImmutable $createdAt = null;
 
     #[Column(name: 'updated_at')]
     public ?DateTimeImmutable $updatedAt = null;
