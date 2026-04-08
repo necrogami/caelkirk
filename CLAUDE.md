@@ -82,6 +82,29 @@ Marko has no HTTP test client. Test controllers as units with mocked/stubbed dep
 
 See `app/foundation/tests/Feature/` for examples.
 
+### Latte Templates + JavaScript
+
+Latte does not allow `{$var}` inside JavaScript string literals. Use `data-` attributes instead:
+
+```latte
+{* WRONG — throws Latte\CompileException *}
+<script>
+    connect('player.{$user->id}');
+</script>
+
+{* RIGHT — use data attributes *}
+<script data-player-id="{$user->id}">
+    connect('player.' + document.currentScript.dataset.playerId);
+</script>
+```
+
+### Package Config Wiring
+
+Every installed Marko package likely needs:
+1. A config file in `config/` (e.g., `config/session.php`, `config/authentication.php`)
+2. Interface bindings in `module.php` (e.g., `UserProviderInterface => DatabaseUserProvider`)
+3. Check if middleware is global (automatic) or per-route (`#[Middleware]` attribute)
+
 ## Module Structure
 
 ```
