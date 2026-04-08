@@ -40,7 +40,7 @@ test('about page loads', async ({ page }) => {
 
 test('faq page loads with accordion', async ({ page }) => {
   await page.goto('/faq');
-  await expect(page.locator('h1')).toContainText('FAQ');
+  await expect(page.locator('h1')).toContainText('Frequently Asked Questions');
   // Click first question to expand
   const firstQuestion = page.locator('button').first();
   await firstQuestion.click();
@@ -104,7 +104,6 @@ test('user can register and lands on character select', async ({ page }) => {
 
 test('register rejects duplicate username', async ({ page }) => {
   const ts = Date.now();
-  // Register first user
   await registerUser(page, `dupe_${ts}`, `dupe1_${ts}@example.com`, 'password123');
 
   // Try to register second user with same username
@@ -124,7 +123,7 @@ test('register rejects duplicate username', async ({ page }) => {
 test('seeded player can log in with username', async ({ page }) => {
   await loginUser(page, 'testplayer', 'password');
   await expect(page).toHaveURL('/game');
-  await expect(page.locator('text=testplayer')).toBeVisible();
+  await expect(page.getByText('testplayer', { exact: true })).toBeVisible();
 });
 
 test('seeded player can log in with email', async ({ page }) => {
@@ -135,13 +134,13 @@ test('seeded player can log in with email', async ({ page }) => {
 test('seeded builder can log in', async ({ page }) => {
   await loginUser(page, 'testbuilder', 'password');
   await expect(page).toHaveURL('/game');
-  await expect(page.locator('text=testbuilder')).toBeVisible();
+  await expect(page.getByText('testbuilder', { exact: true })).toBeVisible();
 });
 
 test('seeded admin can log in', async ({ page }) => {
   await loginUser(page, 'testadmin', 'password');
   await expect(page).toHaveURL('/game');
-  await expect(page.locator('text=testadmin')).toBeVisible();
+  await expect(page.getByText('testadmin', { exact: true })).toBeVisible();
 });
 
 test('login rejects invalid credentials', async ({ page }) => {
@@ -150,7 +149,6 @@ test('login rejects invalid credentials', async ({ page }) => {
   await page.fill('input[name="password"]', 'wrongpassword');
   await page.click('button[type="submit"]');
 
-  // Should stay on login page with error
   await expect(page.locator('text=Invalid credentials')).toBeVisible();
 });
 
@@ -161,11 +159,26 @@ test('character select shows lobby layout not game shell', async ({ page }) => {
 
   // Should see lobby elements
   await expect(page.locator('text=Log Out')).toBeVisible();
-  await expect(page.locator('text=testplayer')).toBeVisible();
+  await expect(page.getByText('testplayer', { exact: true })).toBeVisible();
   await expect(page.locator('text=character slots used')).toBeVisible();
 
   // Should NOT see game shell elements
   await expect(page.locator('text=Say something')).not.toBeVisible();
+});
+
+// --- Logout Flow ---
+
+test('user can log out and is redirected to landing', async ({ page }) => {
+  await loginUser(page, 'testplayer', 'password');
+  await expect(page).toHaveURL('/game');
+
+  // Click logout
+  await page.click('button:has-text("Log Out")');
+  await expect(page).toHaveURL('/');
+
+  // Verify cannot access /game
+  await page.goto('/game');
+  await expect(page).toHaveURL('/login');
 });
 
 // --- Unauthenticated Access ---
