@@ -1,9 +1,9 @@
-{layout 'foundation::layout/game'}
+{layout 'foundation::layout/lobby'}
 
 {block title}Shilla — Character Select{/block}
 
 {block content}
-<div class="max-w-lg mx-auto py-8">
+<div>
     <h2 class="text-xl font-semibold mb-6">Choose Your Character</h2>
 
     {if count($players) > 0}
@@ -36,6 +36,9 @@
                 Create
             </button>
         </form>
+    </div>
+    <div class="text-center mt-8 text-text-muted text-xs">
+        {$user->username} &bull; {count($players)} / 50 character slots used
     </div>
 </div>
 {/block}

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Foundation\Seed;
 
+use App\Foundation\Entity\User;
 use App\Foundation\Repository\SystemConfigRepository;
+use App\Foundation\Repository\UserRepository;
 use DateTimeImmutable;
 use Marko\AdminAuth\Entity\AdminUser;
 use Marko\AdminAuth\Entity\Role;
@@ -20,6 +22,7 @@ readonly class FoundationSeeder implements SeederInterface
         private AdminUserRepositoryInterface $adminUserRepository,
         private RoleRepositoryInterface $roleRepository,
         private SystemConfigRepository $configRepository,
+        private UserRepository $userRepository,
     ) {}
 
     public function run(): void
@@ -27,6 +30,7 @@ readonly class FoundationSeeder implements SeederInterface
         $this->seedSuperAdminRole();
         $this->seedAdminUser();
         $this->seedSystemConfig();
+        $this->seedTestUsers();
     }
 
     private function seedSuperAdminRole(): void
@@ -64,6 +68,29 @@ readonly class FoundationSeeder implements SeederInterface
         $superAdminRole = $this->roleRepository->findBySlug('super-admin');
         if ($superAdminRole !== null && $admin->id !== null) {
             $this->adminUserRepository->syncRoles($admin->id, [$superAdminRole->id]);
+        }
+    }
+
+    private function seedTestUsers(): void
+    {
+        $testUsers = [
+            ['username' => 'testplayer', 'email' => 'player@shilla.org', 'role' => 'player'],
+            ['username' => 'testbuilder', 'email' => 'builder@shilla.org', 'role' => 'builder'],
+            ['username' => 'testadmin', 'email' => 'admin-game@shilla.org', 'role' => 'admin'],
+        ];
+
+        foreach ($testUsers as $data) {
+            if ($this->userRepository->findByUsername($data['username']) !== null) {
+                continue;
+            }
+
+            $user = new User();
+            $user->username = $data['username'];
+            $user->email = $data['email'];
+            $user->password = password_hash('password', PASSWORD_ARGON2ID);
+            $user->role = $data['role'];
+            $user->createdAt = new DateTimeImmutable();
+            $this->userRepository->save($user);
         }
     }
 
