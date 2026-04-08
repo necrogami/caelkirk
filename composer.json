@@ -1,0 +1,35 @@
+{
+    "name": "marko/skeleton",
+    "description": "Marko Framework - Application Skeleton",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.5",
+        "marko/env": "*",
+        "marko/framework": "*",
+        "marko/database-pgsql": "^0.1.3",
+        "marko/authentication": "^0.1.3",
+        "marko/authentication-token": "^0.1.3",
+        "marko/authorization": "^0.1.3",
+        "marko/admin": "^0.1.3",
+        "marko/admin-auth": "^0.1.3",
+        "marko/admin-panel": "^0.1.3",
+        "marko/session-database": "^0.1.3",
+        "marko/security": "^0.1.3",
+        "marko/rate-limiting": "^0.1.3",
+        "marko/sse": "^0.1.3",
+        "marko/pubsub-pgsql": "^0.1.3",
+        "marko/view-latte": "^0.1.3",
+        "marko/mail-smtp": "^0.1.3"
+    },
+    "require-dev": {
+        "marko/dev-server": "*",
+        "pestphp/pest": "^4.0",
+        "marko/testing": "^0.1.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
