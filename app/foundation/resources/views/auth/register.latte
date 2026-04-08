@@ -1,0 +1,58 @@
+{layout 'foundation::layout/auth'}
+
+{block title}Register — Shilla{/block}
+
+{block subtitle}Create your account{/block}
+
+{block content}
+<form method="POST" action="/register" class="space-y-4">
+    <div>
+        <label for="username" class="block text-xs font-medium text-text-muted mb-1">Username</label>
+        <input type="text" id="username" name="username" value="{$old['username'] ?? ''}"
+               class="w-full bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
+               placeholder="Choose a username" required>
+        {if isset($errors) && $errors->has('username')}
+        <p class="text-danger text-xs mt-1">{$errors->first('username')}</p>
+        {/if}
+    </div>
+
+    <div>
+        <label for="email" class="block text-xs font-medium text-text-muted mb-1">Email</label>
+        <input type="email" id="email" name="email" value="{$old['email'] ?? ''}"
+               class="w-full bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
+               placeholder="you@example.com" required>
+        {if isset($errors) && $errors->has('email')}
+        <p class="text-danger text-xs mt-1">{$errors->first('email')}</p>
+        {/if}
+    </div>
+
+    <div>
+        <label for="password" class="block text-xs font-medium text-text-muted mb-1">Password</label>
+        <input type="password" id="password" name="password"
+               class="w-full bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
+               placeholder="At least 8 characters" required>
+        {if isset($errors) && $errors->has('password')}
+        <p class="text-danger text-xs mt-1">{$errors->first('password')}</p>
+        {/if}
+    </div>
+
+    <button type="submit" class="w-full bg-accent hover:bg-accent-hover text-white font-medium py-2 rounded-md transition-colors duration-150">
+        Create Account
+    </button>
+
+    <div class="relative my-4">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-twilight-border"></div></div>
+        <div class="relative flex justify-center text-xs"><span class="bg-twilight-surface px-2 text-text-muted">or continue with</span></div>
+    </div>
+
+    <div class="flex gap-2">
+        <a href="/auth/discord" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">Discord</a>
+        <a href="/auth/google" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">Google</a>
+        <a href="/auth/github" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">GitHub</a>
+    </div>
+</form>
+{/block}
+
+{block footer_link}
+Already have an account? <a href="/login" class="text-accent hover:text-accent-hover transition-colors duration-150">Log in</a>
+{/block}
