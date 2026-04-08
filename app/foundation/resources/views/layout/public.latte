@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{block title}Shilla{/block}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+    {block head}{/block}
+</head>
+<body class="min-h-screen bg-twilight-bg text-text-primary font-['Inter',system-ui,sans-serif]">
+    <header class="border-b border-twilight-border">
+        <nav class="max-w-[960px] mx-auto flex items-center justify-between px-6 h-14">
+            <a href="/" class="text-accent font-semibold text-lg tracking-wide">SHILLA</a>
+            <div class="flex items-center gap-6">
+                <a href="/" class="text-text-secondary hover:text-text-primary text-sm font-medium transition-colors duration-150">Home</a>
+                <a href="/about" class="text-text-secondary hover:text-text-primary text-sm font-medium transition-colors duration-150">About</a>
+                <a href="/faq" class="text-text-secondary hover:text-text-primary text-sm font-medium transition-colors duration-150">FAQ</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/login" class="text-text-secondary hover:text-text-primary text-sm font-medium px-3 py-1.5 rounded-md transition-colors duration-150">Log In</a>
+                <a href="/register" class="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-1.5 rounded-md transition-colors duration-150">Register</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-[960px] mx-auto px-6 py-8">
+        {block content}{/block}
+    </main>
+
+    <footer class="border-t border-twilight-border mt-auto">
+        <div class="max-w-[960px] mx-auto px-6 py-6 text-center text-text-muted text-xs">
+            &copy; {date('Y')} Shilla. All rights reserved.
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{block title}Shilla{/block}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+    {block head}{/block}
+</head>
+<body class="h-screen overflow-hidden bg-twilight-bg text-text-primary font-['Inter',system-ui,sans-serif]"
+      x-data="{
+          activePanel: null,
+          chatExpanded: false,
+          togglePanel(name) {
+              this.activePanel = this.activePanel === name ? null : name;
+          },
+          closePanel() {
+              this.activePanel = null;
+          }
+      }"
+      @keydown.escape.window="closePanel(); chatExpanded = false"
+      @keydown.e.window="if (!$event.target.matches('input,textarea')) togglePanel('equipment')"
+      @keydown.i.window="if (!$event.target.matches('input,textarea')) togglePanel('inventory')"
+      @keydown.s.window="if (!$event.target.matches('input,textarea') && !$event.ctrlKey && !$event.metaKey) togglePanel('skills')"
+      @keydown.q.window="if (!$event.target.matches('input,textarea')) togglePanel('quests')"
+>
+    <div class="h-screen flex flex-col">
+        {* === TOP BAR === *}
+        <header class="h-10 flex-shrink-0 bg-[#22222c] border-b border-twilight-border flex items-center justify-between px-3">
+            <div class="flex items-center gap-3">
+                <span class="text-accent font-bold text-xs tracking-widest">SHILLA</span>
+                <span class="text-twilight-border">|</span>
+                {if isset($player)}
+                <span class="text-text-primary text-sm font-medium">{$player->name}</span>
+                <span class="text-text-muted text-xs">Lv {$player->level ?? 1}</span>
+                {else}
+                <span class="text-text-muted text-sm">No character selected</span>
+                {/if}
+            </div>
+            <div class="flex items-center gap-2">
+                {* Stat pills - placeholder values, real stats come from Character System *}
+                <div class="flex items-center gap-1 bg-[#2a1a1a] border border-[#3a2a2a] rounded-xl px-2 py-0.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-health"></div>
+                    <span class="text-[#e08080] text-[11px] font-medium">{$hp ?? '--'}</span>
+                </div>
+                <div class="flex items-center gap-1 bg-[#1a1a2e] border border-[#2a2a44] rounded-xl px-2 py-0.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-mana"></div>
+                    <span class="text-[#8090d0] text-[11px] font-medium">{$mp ?? '--'}</span>
+                </div>
+                <div class="flex items-center gap-1 bg-[#1a2a1a] border border-[#2a3a2a] rounded-xl px-2 py-0.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-stamina"></div>
+                    <span class="text-[#80c080] text-[11px] font-medium">{$st ?? '--'}</span>
+                </div>
+                <span class="text-gold text-xs ml-1">&#9679; {$gold ?? 0}g</span>
+                <a href="/game/settings" class="w-6 h-6 flex items-center justify-center rounded bg-twilight-elevated border border-twilight-border text-text-muted hover:text-text-primary text-sm transition-colors duration-150 ml-1">&#9881;</a>
+            </div>
+        </header>
+
+        {* === MAIN AREA === *}
+        <div class="flex-1 flex overflow-hidden">
+            {* Room content *}
+            <main class="flex-1 flex flex-col overflow-hidden relative"
+                  :class="{ 'opacity-40': activePanel !== null }">
+                <div class="flex-1 overflow-y-auto p-4">
+                    {block content}
+                    <div class="flex items-center justify-center h-full text-text-muted">
+                        No room loaded
+                    </div>
+                    {/block}
+                </div>
+
+                {* Compass dock *}
+                <div class="flex-shrink-0 flex justify-center py-2 border-t border-[#2e2e3a]">
+                    {block compass}
+                    <div class="grid grid-cols-3 gap-0.5">
+                        {var $exits = $exits ?? []}
+                        {foreach ['NW','N','NE','W','','E','SW','S','SE'] as $dir}
+                        {if $dir === ''}
+                        <div class="w-7 h-[22px] rounded-sm bg-twilight-elevated flex items-center justify-center text-[#30303e] text-[7px]">&#9679;</div>
+                        {elseif in_array(strtolower($dir), $exits)}
+                        <button class="w-7 h-[22px] rounded-sm bg-accent text-white text-[7px] font-semibold hover:bg-accent-hover transition-colors duration-150">{$dir}</button>
+                        {else}
+                        <div class="w-7 h-[22px] rounded-sm bg-twilight-elevated text-[#50506a] text-[7px] flex items-center justify-center">{$dir}</div>
+                        {/if}
+                        {/foreach}
+                    </div>
+                    {/block}
+                </div>
+            </main>
+
+            {* Slide-out panel *}
+            <div x-show="activePanel !== null"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="w-[220px] flex-shrink-0 bg-[#22222c] border-l border-[#34343e] overflow-y-auto"
+                 x-cloak>
+                {block panels}
+                <div class="p-3 text-text-muted text-sm">Panel content</div>
+                {/block}
+            </div>
+
+            {* Icon rail *}
+            <div class="w-12 flex-shrink-0 bg-[#22222c] border-l border-[#2e2e3a] flex flex-col items-center py-2 gap-1.5">
+                <button @click="togglePanel('equipment')"
+                        :class="activePanel === 'equipment' ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150"
+                        title="Equipment (E)">&#9876;</button>
+                <button @click="togglePanel('inventory')"
+                        :class="activePanel === 'inventory' ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150"
+                        title="Inventory (I)">&#9733;</button>
+                <button @click="togglePanel('skills')"
+                        :class="activePanel === 'skills' ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150"
+                        title="Skills (S)">&#10038;</button>
+                <button @click="togglePanel('quests')"
+                        :class="activePanel === 'quests' ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150"
+                        title="Quests (Q)">&#128218;</button>
+                <button @click="togglePanel('guide')"
+                        :class="activePanel === 'guide' ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150"
+                        title="Guide">?</button>
+                <div class="flex-1"></div>
+                <button @click="chatExpanded = !chatExpanded"
+                        :class="chatExpanded ? 'bg-accent text-white border-accent-hover' : 'bg-twilight-elevated text-text-muted border-transparent hover:text-text-secondary'"
+                        class="w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors duration-150 relative"
+                        title="Chat">
+                    &#128172;
+                </button>
+            </div>
+        </div>
+
+        {* === CHAT PEEK === *}
+        <div class="h-8 flex-shrink-0 bg-[#1c1c26] border-t border-[#30303e] flex items-center px-3 gap-2">
+            <div class="flex-1 text-xs text-[#6a6a80] truncate">
+                {block chat_peek}
+                <span class="text-system-msg">System:</span> Welcome to Shilla
+                {/block}
+            </div>
+            <input type="text"
+                   placeholder="Say something..."
+                   class="bg-[#22222c] border border-twilight-border rounded px-2 py-0.5 text-xs text-text-primary placeholder-text-muted w-48 focus:border-accent focus:outline-none transition-colors duration-150">
+        </div>
+    </div>
+
+    {* === COMMAND PALETTE === *}
+    {include 'foundation::components/command-palette'}
+
+    {* === TOAST NOTIFICATIONS === *}
+    {include 'foundation::components/toast'}
+
+    <script src="/js/alpine.min.js" defer></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/sse.js"></script>
+    <script src="/js/command-palette.js"></script>
+    {block scripts}
+    {if isset($user)}
+    <script>
+        ShillaSSE.setPlayerChannel('player.{$user->id}');
+        ShillaSSE.connect('/game/stream');
+    </script>
+    {/if}
+    {/block}
+</body>
+</html>
