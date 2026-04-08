@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'default' => 'bcrypt',
+    'default' => 'argon2id',
 
     'hashers' => [
         'bcrypt' => [
