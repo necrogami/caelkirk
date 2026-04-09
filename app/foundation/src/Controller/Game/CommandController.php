@@ -12,7 +12,9 @@ use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 
+#[Middleware(SecurityHeadersMiddleware::class)]
 class CommandController
 {
     public function __construct(

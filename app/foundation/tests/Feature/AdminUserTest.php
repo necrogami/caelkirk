@@ -7,6 +7,7 @@ use App\Foundation\Entity\User;
 use App\Foundation\Repository\PlayerRepository;
 use App\Foundation\Repository\SocialAccountRepository;
 use App\Foundation\Repository\UserRepository;
+use App\Foundation\Tests\Support\StubCsrfTokenManager;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -51,7 +52,7 @@ it('renders user list', function () {
     $playerRepo = Mockery::mock(PlayerRepository::class);
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
 
-    $controller = new UserAdminController($view, $userRepo, $playerRepo, $socialRepo);
+    $controller = new UserAdminController($view, $userRepo, $playerRepo, $socialRepo, new StubCsrfTokenManager());
 
     $request = new Request(query: ['search' => '', 'role' => null]);
     $response = $controller->index($request);
@@ -74,7 +75,7 @@ it('renders user edit form', function () {
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('findByUserId')->with(1)->andReturn([]);
 
-    $controller = new UserAdminController($view, $userRepo, $playerRepo, $socialRepo);
+    $controller = new UserAdminController($view, $userRepo, $playerRepo, $socialRepo, new StubCsrfTokenManager());
 
     $response = $controller->edit(1);
 
@@ -95,7 +96,7 @@ it('updates user role', function () {
     $playerRepo = Mockery::mock(PlayerRepository::class);
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
 
-    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo);
+    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo, new StubCsrfTokenManager());
 
     $request = new Request(post: ['role' => 'builder', 'character_slot_limit' => '']);
     $response = $controller->update($request, 1);
@@ -115,7 +116,7 @@ it('bans a user', function () {
     $playerRepo = Mockery::mock(PlayerRepository::class);
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
 
-    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo);
+    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo, new StubCsrfTokenManager());
 
     $response = $controller->ban(1);
 
@@ -135,7 +136,7 @@ it('unbans a user', function () {
     $playerRepo = Mockery::mock(PlayerRepository::class);
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
 
-    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo);
+    $controller = new UserAdminController(makeAdminStubView(), $userRepo, $playerRepo, $socialRepo, new StubCsrfTokenManager());
 
     $response = $controller->unban(1);
 

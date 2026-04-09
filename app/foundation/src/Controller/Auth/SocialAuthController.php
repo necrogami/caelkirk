@@ -9,12 +9,18 @@ use App\Foundation\Service\SocialAuthService;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Config\ConfigRepositoryInterface;
 use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\RateLimiting\Middleware\RateLimitMiddleware;
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\Session\Contracts\SessionInterface;
 use Marko\View\ViewInterface;
 
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class, RateLimitMiddleware::class])]
 class SocialAuthController
 {
     public function __construct(
@@ -24,6 +30,7 @@ class SocialAuthController
         private readonly GuardInterface $guard,
         private readonly ConfigRepositoryInterface $config,
         private readonly SessionInterface $session,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     #[Get('/auth/{provider}')]
@@ -44,8 +51,9 @@ class SocialAuthController
     public function callback(Request $request, string $provider): Response
     {
         $code = $request->query('code');
+        $state = $request->query('state');
 
-        if ($code === null) {
+        if ($code === null || !$this->socialAuthService->validateState($state)) {
             return Response::redirect('/login');
         }
 
@@ -92,6 +100,7 @@ class SocialAuthController
             return $this->view->render('foundation::auth/verify-social', [
                 'error' => 'Incorrect password',
                 'provider' => $provider,
+                'csrfToken' => $this->csrfTokenManager->get(),
             ]);
         }
 
@@ -118,6 +127,7 @@ class SocialAuthController
 
         return $this->view->render('foundation::auth/verify-social', [
             'provider' => $provider,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 

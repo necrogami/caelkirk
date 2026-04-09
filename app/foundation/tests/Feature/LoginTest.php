@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Foundation\Controller\Auth\LoginController;
 use App\Foundation\Entity\User;
 use App\Foundation\Repository\UserRepository;
+use App\Foundation\Tests\Support\StubCsrfTokenManager;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Testing\Fake\FakeGuard;
@@ -61,6 +62,7 @@ function makeLoginController(
         userRepository: $userRepo ?? makeLoginStubUserRepo(),
         guard: $guard ?? new FakeGuard(),
         hasher: $hasher ?? makeLoginStubHasher(),
+        csrfTokenManager: new StubCsrfTokenManager(),
     );
 }
 
@@ -77,14 +79,15 @@ function makeTestUser(bool $banned = false): User
     return $user;
 }
 
-it('renders the login page', function () {
+it('renders the login page with CSRF token', function () {
     $view = makeLoginStubView();
     $controller = makeLoginController(view: $view);
 
     $response = $controller->show();
 
     expect($response->statusCode())->toBe(200)
-        ->and($view->lastTemplate)->toBe('foundation::auth/login');
+        ->and($view->lastTemplate)->toBe('foundation::auth/login')
+        ->and($view->lastData['csrfToken'])->toBe('test-csrf-token');
 });
 
 it('logs in with valid credentials and redirects to game', function () {

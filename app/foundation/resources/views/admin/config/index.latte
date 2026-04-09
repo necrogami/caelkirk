@@ -1,6 +1,7 @@
 <h2 class="text-lg font-semibold mb-4">System Configuration</h2>
 
 <form method="POST" action="/admin/config" class="bg-[#24242e] border border-twilight-border rounded-md p-4 space-y-4 max-w-lg">
+    <input type="hidden" name="_token" value="{$csrfToken}">
     <div>
         <label for="character_slot_default" class="block text-xs text-text-muted mb-1">Default Character Slot Limit</label>
         <input type="number" name="character_slot_default" id="character_slot_default" value="{$config['character_slot_default']}"

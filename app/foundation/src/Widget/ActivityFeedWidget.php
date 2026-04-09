@@ -34,10 +34,11 @@ class ActivityFeedWidget implements DashboardWidgetInterface
         $items = '';
 
         foreach ($recentUsers as $user) {
+            $name = htmlspecialchars($user->username, ENT_QUOTES, 'UTF-8');
             $time = $user->createdAt->format('M j, H:i');
             $items .= <<<HTML
             <div class="flex justify-between py-1.5 border-b border-twilight-border last:border-0">
-                <span class="text-xs"><span class="text-accent">{$user->username}</span> <span class="text-text-muted">registered</span></span>
+                <span class="text-xs"><span class="text-accent">{$name}</span> <span class="text-text-muted">registered</span></span>
                 <span class="text-xs text-text-muted">{$time}</span>
             </div>
             HTML;

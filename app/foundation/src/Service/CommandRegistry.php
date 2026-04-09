@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\Foundation\Service;
 
+use App\Foundation\Enum\Role;
+
 class CommandRegistry
 {
-    private const array ROLE_HIERARCHY = [
-        'player' => 0,
-        'builder' => 1,
-        'admin' => 2,
-    ];
 
     /** @var array<string, array{id: string, label: string, action: string, context: string, requiredState: ?string, requiredRole: ?string}> */
     private array $commands = [];
@@ -70,9 +67,7 @@ class CommandRegistry
         }
 
         if ($command['requiredRole'] !== null) {
-            $requiredLevel = self::ROLE_HIERARCHY[$command['requiredRole']] ?? 0;
-            $userLevel = self::ROLE_HIERARCHY[$role] ?? 0;
-            if ($userLevel < $requiredLevel) {
+            if (!Role::meetsRequirement($role, $command['requiredRole'])) {
                 return false;
             }
         }

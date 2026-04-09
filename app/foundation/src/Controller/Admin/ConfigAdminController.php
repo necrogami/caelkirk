@@ -12,13 +12,18 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class])]
 class ConfigAdminController
 {
     public function __construct(
         private readonly ViewInterface $view,
         private readonly ConfigService $configService,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     #[Get('/admin/config')]
@@ -33,6 +38,7 @@ class ConfigAdminController
 
         return $this->view->render('foundation::admin/config/index', [
             'config' => $config,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
@@ -43,7 +49,7 @@ class ConfigAdminController
     {
         $slotDefault = $request->post('character_slot_default');
         if ($slotDefault !== null) {
-            $this->configService->set('character_slot_default', (int) $slotDefault);
+            $this->configService->set('character_slot_default', max(1, min(100, (int) $slotDefault)));
         }
 
         $maintenance = $request->post('maintenance_mode');

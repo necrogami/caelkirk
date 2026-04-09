@@ -49,7 +49,7 @@ readonly class DatabaseUserProvider implements UserProviderInterface
         }
 
         /** @var User $user */
-        if ($user->getRememberToken() !== $token) {
+        if ($user->getRememberToken() === null || !hash_equals($user->getRememberToken(), $token)) {
             return null;
         }
 

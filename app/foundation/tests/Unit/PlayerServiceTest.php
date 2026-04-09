@@ -87,6 +87,16 @@ it('rejects duplicate character name', function () {
     );
 })->throws(\RuntimeException::class, 'Character name already taken');
 
+it('rejects invalid character name with special characters', function () {
+    expect(fn () => $this->service->createPlayer(1, '<script>alert(1)</script>', null))
+        ->toThrow(\RuntimeException::class, 'Invalid character name');
+});
+
+it('rejects character name that is too short', function () {
+    expect(fn () => $this->service->createPlayer(1, 'ab', null))
+        ->toThrow(\RuntimeException::class, 'Invalid character name');
+});
+
 it('lists players for a user', function () {
     $player = new Player();
     $player->name = 'Aldric';

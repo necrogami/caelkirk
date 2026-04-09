@@ -29,6 +29,7 @@
     <div class="bg-twilight-surface border border-twilight-border rounded-md p-4">
         <h3 class="font-medium mb-3">Create New Character</h3>
         <form method="POST" action="/game/characters" class="flex gap-3">
+            <input type="hidden" name="_token" value="{$csrfToken}">
             <input type="text" name="name" placeholder="Character name"
                    class="flex-1 bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
                    required minlength="3" maxlength="50">
@@ -38,7 +39,7 @@
         </form>
     </div>
     <div class="text-center mt-8 text-text-muted text-xs">
-        {$user->username} &bull; {count($players)} / 50 character slots used
+        {$user->username} &bull; {count($players)} / {$slotLimit} character slots used
     </div>
 </div>
 {/block}

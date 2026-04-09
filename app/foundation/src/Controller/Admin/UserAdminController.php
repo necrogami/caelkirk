@@ -15,8 +15,12 @@ use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class])]
 class UserAdminController
 {
     public function __construct(
@@ -24,6 +28,7 @@ class UserAdminController
         private readonly UserRepository $userRepository,
         private readonly PlayerRepository $playerRepository,
         private readonly SocialAccountRepository $socialAccountRepository,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     #[Get('/admin/users')]
@@ -60,6 +65,7 @@ class UserAdminController
             'user' => $user,
             'players' => $players,
             'socials' => $socials,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
@@ -83,7 +89,8 @@ class UserAdminController
         }
 
         if ($slotLimit !== null && $slotLimit !== '') {
-            $user->characterSlotLimit = (int) $slotLimit;
+            $limit = (int) $slotLimit;
+            $user->characterSlotLimit = max(1, min(100, $limit));
         }
 
         $user->updatedAt = new \DateTimeImmutable();

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Foundation\Controller\Auth\RegisterController;
 use App\Foundation\Entity\User;
 use App\Foundation\Repository\UserRepository;
+use App\Foundation\Tests\Support\StubCsrfTokenManager;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 use Marko\Testing\Fake\FakeGuard;
@@ -94,6 +95,7 @@ function makeRegisterController(
         guard: $guard ?? new FakeGuard(),
         hasher: $hasher ?? makeStubHasher(),
         validator: $validator ?? makeStubValidator(),
+        csrfTokenManager: new StubCsrfTokenManager(),
     );
 }
 
@@ -164,6 +166,23 @@ it('rejects duplicate username', function () {
     expect($response->statusCode())->toBe(200)
         ->and($view->lastData['errors'])->toBeInstanceOf(ValidationErrors::class)
         ->and($view->lastData['errors']->has('username'))->toBeTrue();
+});
+
+it('strips password from old data on validation failure', function () {
+    $view = makeStubView();
+    $controller = makeRegisterController(view: $view, validator: makeStubValidator(passes: false));
+
+    $request = new Request(post: [
+        'username' => 'testuser',
+        'email' => 'test@example.com',
+        'password' => 'SecurePass123!',
+    ]);
+
+    $controller->store($request);
+
+    expect($view->lastData['old'])->not->toHaveKey('password')
+        ->and($view->lastData['old'])->toHaveKey('username')
+        ->and($view->lastData['old'])->toHaveKey('email');
 });
 
 it('rejects invalid input', function () {

@@ -17,7 +17,7 @@ docker start shilla-postgres
 # Or first time: docker run -d --name shilla-postgres -e POSTGRES_USER=shilla -e POSTGRES_PASSWORD=shilla -e POSTGRES_DB=shilla -p 5432:5432 postgres:17-alpine
 
 # Start dev server
-php -S localhost:8000 -t public/
+php -S localhost:8001 -t public/
 
 # Build CSS (after changing templates)
 npm run build:css

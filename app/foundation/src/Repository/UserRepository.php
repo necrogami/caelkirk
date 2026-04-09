@@ -43,7 +43,8 @@ class UserRepository extends Repository
         $query = $this->query();
 
         if ($term !== '') {
-            $query->where('username', 'LIKE', "%{$term}%");
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $term);
+            $query->where('username', 'LIKE', "%{$escaped}%");
         }
 
         if ($role !== null) {

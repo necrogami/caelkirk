@@ -9,6 +9,7 @@ use App\Foundation\Entity\User;
 use App\Foundation\Repository\SocialAccountRepository;
 use App\Foundation\Repository\UserRepository;
 use Marko\Hashing\Contracts\HasherInterface;
+use Marko\Session\Contracts\SessionInterface;
 
 class SocialAuthService
 {
@@ -16,6 +17,7 @@ class SocialAuthService
         private readonly UserRepository $userRepository,
         private readonly SocialAccountRepository $socialAccountRepository,
         private readonly HasherInterface $hasher,
+        private readonly SessionInterface $session,
     ) {}
 
     /**
@@ -127,15 +129,30 @@ class SocialAuthService
      */
     public function getAuthorizationUrl(string $provider, array $config): string
     {
+        $state = bin2hex(random_bytes(16));
+        $this->session->set('oauth_state', $state);
+
         $params = [
             'client_id' => $config['client_id'],
             'redirect_uri' => $config['redirect_uri'],
             'response_type' => 'code',
             'scope' => implode(' ', $config['scopes']),
-            'state' => bin2hex(random_bytes(16)),
+            'state' => $state,
         ];
 
         return $config['authorize_url'] . '?' . http_build_query($params);
+    }
+
+    public function validateState(?string $state): bool
+    {
+        $stored = $this->session->get('oauth_state');
+        $this->session->remove('oauth_state');
+
+        if ($stored === null || $state === null) {
+            return false;
+        }
+
+        return hash_equals($stored, $state);
     }
 
     private function createSocialLink(int $userId, string $provider, array $profile): void

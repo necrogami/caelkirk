@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Foundation\Controller\Public;
 
 use Marko\Routing\Attributes\Get;
+use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Http\Response;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
+#[Middleware(SecurityHeadersMiddleware::class)]
 class FaqController
 {
     public function __construct(

@@ -28,7 +28,7 @@ export const test = base.extend({
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    const baseURL = process.env.BASE_URL || 'http://localhost:8000';
+    const baseURL = process.env.BASE_URL || 'http://localhost:8001';
     const originalGoto = page.goto.bind(page);
     page.goto = (url: string, options?: any) => {
       const fullUrl = url.startsWith('/') ? baseURL + url : url;

@@ -51,7 +51,13 @@ readonly class FoundationSeeder implements SeederInterface
 
     private function seedAdminUser(): void
     {
-        $email = env('ADMIN_EMAIL', 'admin@shilla.org');
+        $email = env('ADMIN_EMAIL');
+        $password = env('ADMIN_PASSWORD');
+
+        if ($email === null || $password === null) {
+            throw new \RuntimeException('ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env to seed the admin user');
+        }
+
         $existing = $this->adminUserRepository->findByEmail($email);
 
         if ($existing !== null) {
@@ -61,7 +67,7 @@ readonly class FoundationSeeder implements SeederInterface
         $admin = new AdminUser();
         $admin->email = $email;
         $admin->name = 'Admin';
-        $admin->password = password_hash(env('ADMIN_PASSWORD', 'admin'), PASSWORD_ARGON2ID);
+        $admin->password = password_hash($password, PASSWORD_ARGON2ID);
         $admin->createdAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
         $this->adminUserRepository->save($admin);
 
@@ -73,6 +79,10 @@ readonly class FoundationSeeder implements SeederInterface
 
     private function seedTestUsers(): void
     {
+        if (env('APP_ENV', 'local') !== 'local') {
+            return;
+        }
+
         $testUsers = [
             ['username' => 'testplayer', 'email' => 'player@shilla.org', 'role' => 'player'],
             ['username' => 'testbuilder', 'email' => 'builder@shilla.org', 'role' => 'builder'],

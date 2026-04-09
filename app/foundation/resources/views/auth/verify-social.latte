@@ -10,6 +10,7 @@
 </div>
 
 <form method="POST" action="/auth/verify-link" class="space-y-4">
+    <input type="hidden" name="_token" value="{$csrfToken}">
     {if isset($error)}
     <div class="bg-danger/10 border border-danger/30 rounded-md px-3 py-2 text-danger text-sm">
         {$error}

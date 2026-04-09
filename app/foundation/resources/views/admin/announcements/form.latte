@@ -2,6 +2,7 @@
 
 <form method="POST" action="{if $announcement}/admin/announcements/{$announcement->id}{else}/admin/announcements{/if}"
       class="bg-[#24242e] border border-twilight-border rounded-md p-4 space-y-4 max-w-lg">
+    <input type="hidden" name="_token" value="{$csrfToken}">
 
     <div>
         <label for="title" class="block text-xs text-text-muted mb-1">Title</label>

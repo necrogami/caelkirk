@@ -11,7 +11,7 @@ return [
         'name' => 'shilla_session',
         'path' => '/',
         'domain' => '',
-        'secure' => false,
+        'secure' => env('APP_ENV', 'local') !== 'local',
         'httponly' => true,
         'samesite' => 'lax',
     ],

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Foundation\Controller\Admin\ConfigAdminController;
 use App\Foundation\Service\ConfigService;
+use App\Foundation\Tests\Support\StubCsrfTokenManager;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
 
@@ -34,7 +35,7 @@ it('renders the config page with current values', function () {
     $configService->shouldReceive('get')->with('character_slot_default', 50)->andReturn(50);
     $configService->shouldReceive('get')->with('maintenance_mode', false)->andReturn(false);
 
-    $controller = new ConfigAdminController($view, $configService);
+    $controller = new ConfigAdminController($view, $configService, new StubCsrfTokenManager());
     $response = $controller->index();
 
     expect($response->statusCode())->toBe(200)
@@ -48,7 +49,7 @@ it('updates config values', function () {
     $configService->shouldReceive('set')->with('character_slot_default', 75)->once();
     $configService->shouldReceive('set')->with('maintenance_mode', true)->once();
 
-    $controller = new ConfigAdminController(makeConfigAdminStubView(), $configService);
+    $controller = new ConfigAdminController(makeConfigAdminStubView(), $configService, new StubCsrfTokenManager());
 
     $request = new Request(post: [
         'character_slot_default' => '75',

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3638fac5c9791aa96c67996567f7bc71",
+    "content-hash": "2ac699822314056f37b6730327b910ea",
     "packages": [
         {
             "name": "amphp/amp",
@@ -748,6 +748,51 @@
             "time": "2026-03-26T16:28:58+00:00"
         },
         {
+            "name": "marko/cache-file",
+            "version": "0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-cache-file.git",
+                "reference": "30b35cb07078ff9bc86ae1affea086db82f3b26c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-cache-file/zipball/30b35cb07078ff9bc86ae1affea086db82f3b26c",
+                "reference": "30b35cb07078ff9bc86ae1affea086db82f3b26c",
+                "shasum": ""
+            },
+            "require": {
+                "marko/cache": "self.version",
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Cache\\File\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "File-based cache driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-cache-file/tree/0.1.3"
+            },
+            "time": "2026-03-25T17:53:35+00:00"
+        },
+        {
             "name": "marko/cli",
             "version": "0.1.3",
             "source": {
@@ -1005,6 +1050,52 @@
                 "source": "https://github.com/marko-php/marko-encryption/tree/0.1.3"
             },
             "time": "2026-03-26T16:28:58+00:00"
+        },
+        {
+            "name": "marko/encryption-openssl",
+            "version": "0.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marko-php/marko-encryption-openssl.git",
+                "reference": "4adefaea73891e0054ad2b5dcb1aa298b6197a02"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/marko-php/marko-encryption-openssl/zipball/4adefaea73891e0054ad2b5dcb1aa298b6197a02",
+                "reference": "4adefaea73891e0054ad2b5dcb1aa298b6197a02",
+                "shasum": ""
+            },
+            "require": {
+                "ext-openssl": "*",
+                "marko/config": "self.version",
+                "marko/core": "self.version",
+                "marko/encryption": "self.version",
+                "php": "^8.5"
+            },
+            "require-dev": {
+                "marko/testing": "self.version",
+                "pestphp/pest": "^4.0"
+            },
+            "type": "marko-module",
+            "extra": {
+                "marko": {
+                    "module": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marko\\Encryption\\OpenSsl\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "OpenSSL encryption driver for Marko Framework",
+            "support": {
+                "source": "https://github.com/marko-php/marko-encryption-openssl/tree/0.1.3"
+            },
+            "time": "2026-03-25T17:53:35+00:00"
         },
         {
             "name": "marko/env",

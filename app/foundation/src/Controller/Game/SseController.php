@@ -9,9 +9,11 @@ use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\PubSub\SubscriberInterface;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\Sse\SseStream;
 use Marko\Sse\StreamingResponse;
 
+#[Middleware(SecurityHeadersMiddleware::class)]
 class SseController
 {
     public function __construct(

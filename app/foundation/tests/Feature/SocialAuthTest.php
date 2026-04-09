@@ -7,6 +7,7 @@ use App\Foundation\Entity\User;
 use App\Foundation\Repository\SocialAccountRepository;
 use App\Foundation\Repository\UserRepository;
 use App\Foundation\Service\SocialAuthService;
+use App\Foundation\Tests\Support\StubSession;
 
 function makeSocialStubHasher(): object
 {
@@ -54,7 +55,7 @@ it('logs in when social account already linked', function () {
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('findByProvider')->with('discord', '12345')->andReturn($social);
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->handleCallback('discord', makeSocialProfile());
 
@@ -74,7 +75,7 @@ it('creates new user when no match found', function () {
     $socialRepo->shouldReceive('findByProvider')->with('google', '99999')->andReturn(null);
     $socialRepo->shouldReceive('save')->once();
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->handleCallback('google', makeSocialProfile('99999', 'new@example.com', 'NewUser'));
 
@@ -91,7 +92,7 @@ it('requires password verification when email matches existing user with passwor
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('findByProvider')->with('github', '12345')->andReturn(null);
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->handleCallback('github', makeSocialProfile());
 
@@ -109,7 +110,7 @@ it('directs to settings when email matches social-only account', function () {
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('findByProvider')->with('discord', '12345')->andReturn(null);
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->handleCallback('discord', makeSocialProfile('12345', 'social@example.com'));
 
@@ -123,7 +124,7 @@ it('verifies password and links social account', function () {
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('save')->once();
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->verifyAndLink($user, 'correctpassword', 'github', makeSocialProfile());
 
@@ -136,7 +137,7 @@ it('rejects wrong password during verification', function () {
     $userRepo = Mockery::mock(UserRepository::class);
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $result = $service->verifyAndLink($user, 'wrongpassword', 'github', makeSocialProfile());
 
@@ -156,7 +157,7 @@ it('unlinks social account when user has password', function () {
     $socialRepo->shouldReceive('find')->with(10)->andReturn($social);
     $socialRepo->shouldReceive('delete')->with($social)->once();
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $service->unlinkFromCurrentUser($user, 10);
 });
@@ -169,7 +170,7 @@ it('rejects unlink when it is the only login method', function () {
     $socialRepo = Mockery::mock(SocialAccountRepository::class);
     $socialRepo->shouldReceive('countByUserId')->with(2)->andReturn(1);
 
-    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher());
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
 
     $service->unlinkFromCurrentUser($user, 10);
 })->throws(\RuntimeException::class, 'Cannot unlink');

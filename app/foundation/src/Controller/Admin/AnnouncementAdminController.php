@@ -10,21 +10,24 @@ use Marko\AdminAuth\Attributes\RequiresPermission;
 use Marko\AdminAuth\Middleware\AdminAuthMiddleware;
 use Marko\PubSub\Message;
 use Marko\PubSub\PublisherInterface;
-use Marko\Routing\Attributes\Delete;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
-use Marko\Routing\Attributes\Put;
 use Marko\Routing\Http\Request;
 use Marko\Routing\Http\Response;
+use Marko\Security\Contracts\CsrfTokenManagerInterface;
+use Marko\Security\Middleware\CsrfMiddleware;
+use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class])]
 class AnnouncementAdminController
 {
     public function __construct(
         private readonly ViewInterface $view,
         private readonly AnnouncementRepository $announcementRepository,
         private readonly PublisherInterface $publisher,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {}
 
     #[Get('/admin/announcements')]
@@ -36,6 +39,7 @@ class AnnouncementAdminController
 
         return $this->view->render('foundation::admin/announcements/index', [
             'announcements' => $announcements,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
@@ -46,6 +50,7 @@ class AnnouncementAdminController
     {
         return $this->view->render('foundation::admin/announcements/form', [
             'announcement' => null,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
@@ -56,6 +61,7 @@ class AnnouncementAdminController
     {
         $announcement = new Announcement();
         $this->fillFromRequest($announcement, $request);
+        $announcement->createdAt = new \DateTimeImmutable();
         $this->announcementRepository->save($announcement);
 
         if ($announcement->active) {
@@ -78,10 +84,11 @@ class AnnouncementAdminController
 
         return $this->view->render('foundation::admin/announcements/form', [
             'announcement' => $announcement,
+            'csrfToken' => $this->csrfTokenManager->get(),
         ]);
     }
 
-    #[Put('/admin/announcements/{id}')]
+    #[Post('/admin/announcements/{id}')]
     #[Middleware(AdminAuthMiddleware::class)]
     #[RequiresPermission(permission: 'system.announcements')]
     public function update(Request $request, int $id): Response
@@ -99,7 +106,7 @@ class AnnouncementAdminController
         return Response::redirect('/admin/announcements');
     }
 
-    #[Delete('/admin/announcements/{id}')]
+    #[Post('/admin/announcements/{id}/delete')]
     #[Middleware(AdminAuthMiddleware::class)]
     #[RequiresPermission(permission: 'system.announcements')]
     public function destroy(int $id): Response
@@ -117,14 +124,29 @@ class AnnouncementAdminController
     {
         $announcement->title = $request->post('title', '');
         $announcement->body = $request->post('body', '');
-        $announcement->type = $request->post('type', 'info');
+        $announcement->type = in_array($request->post('type'), ['info', 'warning', 'maintenance'], true)
+            ? $request->post('type')
+            : 'info';
         $announcement->active = $request->post('active') === '1';
 
         $startsAt = $request->post('starts_at');
-        $announcement->startsAt = $startsAt ? new \DateTimeImmutable($startsAt) : null;
+        $announcement->startsAt = $this->parseDate($startsAt);
 
         $endsAt = $request->post('ends_at');
-        $announcement->endsAt = $endsAt ? new \DateTimeImmutable($endsAt) : null;
+        $announcement->endsAt = $this->parseDate($endsAt);
+    }
+
+    private function parseDate(?string $value): ?\DateTimeImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\DateMalformedStringException) {
+            return null;
+        }
     }
 
     private function publishAnnouncement(Announcement $announcement): void

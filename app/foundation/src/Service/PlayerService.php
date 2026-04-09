@@ -16,6 +16,11 @@ class PlayerService
 
     public function createPlayer(int $userId, string $name, ?int $userSlotOverride): Player
     {
+        $name = trim($name);
+        if (strlen($name) < 3 || strlen($name) > 50 || !preg_match('/^[a-zA-Z0-9_ -]+$/', $name)) {
+            throw new \RuntimeException('Invalid character name');
+        }
+
         $limit = $this->configService->getCharacterSlotLimit($userSlotOverride);
         $count = $this->playerRepository->countByUserId($userId);
 
@@ -32,6 +37,7 @@ class PlayerService
         $player->userId = $userId;
         $player->name = $name;
         $player->slotNumber = $this->playerRepository->nextSlotNumber($userId);
+        $player->createdAt = new \DateTimeImmutable();
 
         $this->playerRepository->save($player);
 
