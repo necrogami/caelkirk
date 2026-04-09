@@ -8,19 +8,7 @@ Three features needed to close Foundation's exit criteria. The CreatePlayerOnReg
 
 ### Approach: HMAC-Signed URLs (Stateless)
 
-No database table. The verification URL contains `id` (user ID), `expires` (Unix timestamp), and `signature` (HMAC-SHA256).
-
-**Signing formula:**
-```
-key = ENCRYPTION_KEY . '|' . ($emailVerifiedAt?->getTimestamp() ?? 'null')
-payload = "verify|{$userId}|{$expires}"
-signature = hash_hmac('sha256', payload, key)
-```
-
-This means:
-- Tokens are stateless — nothing stored in the DB
-- A token is automatically invalidated once the user verifies (because `emailVerifiedAt` changes the key material)
-- Expiry is 60 minutes
+No database table. The verification URL contains `id` (user ID), `expires` (Unix timestamp), and `signature` (HMAC-SHA256). The signing key is derived from `ENCRYPTION_KEY` combined with the user's current `emailVerifiedAt` value, so a token is automatically invalidated once the user verifies (the key material changes). Expiry is 60 minutes.
 
 ### Routes
 
@@ -29,42 +17,29 @@ This means:
 | GET | `/verify-email` | Consume the signed URL (requires auth) |
 | POST | `/verify-email/resend` | Resend verification email (requires auth) |
 
-Controller uses `#[Middleware([AuthMiddleware::class, SecurityHeadersMiddleware::class, CsrfMiddleware::class, RateLimitMiddleware::class])]` — `AuthMiddleware` is required since both routes need a logged-in user.
-
-Initial send happens inside `RegisterController::store()` after user creation.
+Both routes require `AuthMiddleware` since the user must be logged in. Initial send happens inside `RegisterController::store()` after user creation.
 
 ### Unverified User Policy: Soft Gate
 
-Unverified users CAN play. They see a persistent banner in the game layout with a resend link. Progression limits (level cap, zone restrictions, character volume cap) are enforced by later sub-projects that check `emailVerifiedAt`. Foundation only provides:
-- The banner in `layout/game.latte` and `layout/lobby.latte`
-- The verification flow itself
+Unverified users CAN play. They see a persistent banner in the game and lobby layouts with a resend link. Progression limits (level cap, zone restrictions, character volume cap) are enforced by later sub-projects that check `emailVerifiedAt`. Foundation only provides the banner and the verification flow.
 
 ### Social Auth Users
 
-Users created via social OAuth get `emailVerifiedAt = new DateTimeImmutable()` at creation time — the provider already verified their email. Users with synthetic emails (`@social.local`) are also auto-verified and never receive verification emails.
+Users created via social OAuth are auto-verified at creation time — the provider already verified their email. Users with synthetic emails (`@social.local`) are also auto-verified and never receive verification emails.
 
 ### Service: `EmailVerificationService`
 
-Methods:
-- `sendVerificationEmail(User $user): void` — build signed URL, compose and send email via `MailerInterface`
-- `verify(User $user, int $expires, string $signature): bool` — check expiry, recompute signature with `hash_equals()`, set `emailVerifiedAt` + save
-- `isVerified(User $user): bool`
-- `makeVerificationUrl(User $user): string` (private)
-- `makeSignature(int $userId, int $expires, ?DateTimeImmutable $emailVerifiedAt): string` (private)
-
-Constructor takes: `MailerInterface`, `UserRepository`, `ViewInterface`, `string $encryptionKey`, `string $appUrl`. Bound via factory closure in `module.php`.
-
-Email body is built using `$this->view->renderToString('foundation::email/verify', [...])` — the existing `ViewInterface::renderToString()` method returns HTML as a string, which is then passed to `Message::create()->html($html)`.
+Responsible for generating signed URLs, sending verification emails, and processing verification. Uses `ViewInterface::renderToString()` to render the email body from a Latte template, then sends via `MailerInterface`. Needs `ENCRYPTION_KEY` and `APP_URL` as scalar constructor params, so requires a factory closure binding in `module.php`.
 
 ### Email Template
 
-`app/foundation/resources/views/email/verify.latte` — inline-styled HTML matching twilight theme. Subject: "Verify your Shilla account". Contains verification button + plaintext URL fallback + 1-hour expiry note.
+Inline-styled HTML matching the twilight theme. Subject: "Verify your Shilla account". Contains verification button, plaintext URL fallback, and 1-hour expiry note.
 
 ### Edge Cases
 
 - **Expired token:** Render verify-email page with error + resend form
 - **Already verified:** Redirect to `/game`
-- **Resend spam:** Handled by `RateLimitMiddleware` on the class
+- **Resend spam:** Rate-limited by middleware
 - **Social auth synthetic email:** Skip sending (check for `@social.local` suffix)
 - **User ID mismatch in signed URL:** Reject — prevents verifying another user's email
 
@@ -79,7 +54,7 @@ Email body is built using `$this->view->renderToString('foundation::email/verify
 | `resources/views/layout/lobby.latte` | Modify — add verification banner |
 | `src/Controller/Auth/RegisterController.php` | Modify — inject service, send email after registration |
 | `src/Service/SocialAuthService.php` | Modify — set `emailVerifiedAt` for social users |
-| `module.php` | Modify — see module.php wiring section below |
+| `module.php` | Modify — add factory binding for service |
 | `tests/Feature/EmailVerificationTest.php` | Create |
 
 ### Test Cases
@@ -103,20 +78,16 @@ Email body is built using `$this->view->renderToString('foundation::email/verify
 
 ### Approach: Hashed Tokens in Database
 
-256-bit random token (`bin2hex(random_bytes(32))` → 64-char hex string). Store SHA-256 hash of token in DB. Raw token appears only in the email URL. 60-minute expiry. One-time use — delete token row after successful reset. Delete all user tokens when a new reset is requested.
+256-bit random token, stored as SHA-256 hash in DB. Raw token appears only in the email URL. 60-minute expiry. One-time use — delete after successful reset. Delete all user tokens when a new reset is requested (one valid token per user at a time).
 
 ### Entity: `PasswordResetToken`
 
-```
-password_reset_tokens
-─────────────────────
-id          SERIAL PRIMARY KEY
-user_id     INT NOT NULL → users(id) ON DELETE CASCADE
-token_hash  VARCHAR(64) NOT NULL
-created_at  TIMESTAMP NOT NULL
-```
-
-Uses auto-increment integer PK — standard `EntityHydrator::isNew()` works. Per CLAUDE.md patterns, `createdAt` must be set explicitly before save: `$token->createdAt = new DateTimeImmutable()`.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | SERIAL PK | Auto-increment — standard hydrator pattern |
+| user_id | INT NOT NULL | FK → users(id) ON DELETE CASCADE |
+| token_hash | VARCHAR(64) NOT NULL | SHA-256 hex of raw token |
+| created_at | TIMESTAMP NOT NULL | Must be set explicitly before save per CLAUDE.md |
 
 ### Routes
 
@@ -126,6 +97,8 @@ Uses auto-increment integer PK — standard `EntityHydrator::isNew()` works. Per
 | POST | `/forgot-password` | Validate email, create token, send email |
 | GET | `/reset-password/{token}` | Render new password form |
 | POST | `/reset-password` | Validate token + password, update user |
+
+All routes are unauthenticated (user forgot their password).
 
 ### Anti-Enumeration
 
@@ -137,20 +110,15 @@ Silently skipped — no email sent. A social-only user has no password to reset.
 
 ### Service: `PasswordResetService`
 
-Methods:
-- `sendResetLink(string $email): void` — find user, skip if not found or social-only, delete old tokens, create new token, send email
-- `findValidToken(string $rawToken): ?PasswordResetToken` — validate format, hash, lookup, check expiry
-- `resetPassword(string $rawToken, string $newPassword): bool` — find token, load user, hash password, save, delete all user tokens
+Responsible for token generation, email sending, token validation, and password update. Uses `MailerInterface` for email, `HasherInterface` for password hashing, `ViewInterface` for email template rendering.
 
 ### Repository: `PasswordResetTokenRepository`
 
-- `findByTokenHash(string $tokenHash): ?PasswordResetToken`
-- `deleteByUserId(int $userId): void` (raw SQL bulk delete)
-- `deleteExpired(int $lifetimeMinutes): int` (raw SQL cleanup)
+Standard repository with `findByTokenHash()` for lookup, `deleteByUserId()` for cleanup (raw SQL bulk delete), and `deleteExpired()` for maintenance.
 
 ### Email Template
 
-`app/foundation/resources/views/email/password-reset.latte` — inline-styled HTML. Subject: "Reset your Shilla password". Contains reset button + plaintext URL fallback + 60-minute expiry note.
+Inline-styled HTML. Subject: "Reset your Shilla password". Contains reset button, plaintext URL fallback, and 60-minute expiry note.
 
 ### Login Page
 
@@ -159,10 +127,10 @@ Add "Forgot password?" link below password field in `auth/login.latte`.
 ### Security
 
 - Token entropy: 256-bit
-- Storage: SHA-256 hash only
-- Comparison: lookup by `WHERE token_hash = ?`, then `hash_equals()` in PHP for constant-time verification
+- Storage: SHA-256 hash only — raw token never stored
+- Comparison: lookup by hash, then `hash_equals()` in PHP for constant-time verification
 - Anti-enumeration: same response regardless of email existence
-- Rate limiting: `RateLimitMiddleware` on controller
+- Rate limiting: middleware on controller
 - One valid token per user at a time
 - Banned users can reset (doesn't leak ban status) but still can't login
 
@@ -178,8 +146,8 @@ Add "Forgot password?" link below password field in `auth/login.latte`.
 | `resources/views/auth/reset-password.latte` | Create |
 | `resources/views/email/password-reset.latte` | Create |
 | `resources/views/auth/login.latte` | Modify — add "Forgot password?" link |
-| `module.php` | Modify — see module.php wiring section below |
-| `tests/Support/StubMailer.php` | Create — see test support section below |
+| `module.php` | Modify — add repository + service to singletons |
+| `tests/Support/StubMailer.php` | Create |
 | `tests/Feature/PasswordResetTest.php` | Create |
 | `tests/Unit/PasswordResetServiceTest.php` | Create |
 
@@ -211,26 +179,19 @@ Add "Forgot password?" link below password field in `auth/login.latte`.
 
 ### Approach: Native cURL
 
-No Guzzle or PSR-18 — zero new dependencies. PHP's `curl` extension is already available. Two HTTP calls per login (token exchange + profile fetch) wrapped in a thin service class.
+No new dependencies. PHP's `curl` extension is already available. Two HTTP calls per login (token exchange + profile fetch) wrapped in a thin service class.
 
 ### Service: `OAuthHttpClient`
 
-Location: `src/Service/OAuthHttpClient.php`. Injected into `SocialAuthController`, replacing the `exchangeCodeForProfile()` stub.
-
-**Public method:**
-```
-fetchProfile(string $provider, string $code): array
-```
-
-Returns: `['id' => string, 'email' => ?string, 'name' => string, 'access_token' => string, 'refresh_token' => ?string]`
+Injected into `SocialAuthController`, replacing the `exchangeCodeForProfile()` stub. Single public method: `fetchProfile(provider, code)` returns a normalized profile array.
 
 ### Token Exchange Flow
 
-Standard OAuth 2.0 POST to `{token_url}` with `grant_type=authorization_code`, `code`, `redirect_uri`, `client_id`, `client_secret`. All three providers use the same flow. GitHub requires explicit `Accept: application/json` header.
+Standard OAuth 2.0 POST to the provider's token URL with authorization code, client credentials, and redirect URI. All three providers use the same flow. GitHub requires an explicit `Accept: application/json` header.
 
 ### Profile Fetch
 
-GET `{user_url}` with `Authorization: Bearer {access_token}`. GitHub requires `User-Agent: Shilla-MUD` header.
+GET the provider's user URL with a Bearer token. GitHub additionally requires a `User-Agent` header.
 
 ### Provider Normalization
 
@@ -240,17 +201,17 @@ GET `{user_url}` with `Authorization: Bearer {access_token}`. GitHub requires `U
 | email | `email` | `email` | `email` (null if private → fallback) |
 | name | `username` | `name` | `login` |
 
-**GitHub email fallback:** If `email` is null (private), make secondary GET to `https://api.github.com/user/emails`, pick the primary verified email.
+**GitHub email fallback:** If `email` is null (private), secondary request to GitHub's emails API to find the primary verified email.
 
 ### Error Handling
 
-Custom `OAuthException` class. Thrown on: cURL failure, non-200 response, missing `access_token`, JSON decode failure, unsupported provider. Controller catches `OAuthException` and redirects to `/login` — never expose OAuth error details to users.
+Custom `OAuthException`. Thrown on network failure, non-200 response, missing access token, JSON decode failure, or unsupported provider. Controller catches and redirects to `/login`.
 
-**Logging guardrails:** Exception messages must NOT include raw HTTP responses, access tokens, or full provider URLs. Log only: timestamp, provider name, error category (timeout/4xx/5xx). Never log the exception message itself to avoid leaking sensitive data through misconfigured log viewers.
+**Logging guardrails:** Exception messages must NOT include raw HTTP responses, access tokens, or full provider URLs. Log only: timestamp, provider name, and error category (timeout/4xx/5xx).
 
 ### Timeouts
 
-5s connect, 10s total. Prevents hanging on slow providers.
+5s connect, 10s total.
 
 ### Files
 
@@ -259,19 +220,19 @@ Custom `OAuthException` class. Thrown on: cURL failure, non-200 response, missin
 | `src/Service/OAuthHttpClient.php` | Create |
 | `src/Exception/OAuthException.php` | Create |
 | `src/Controller/Auth/SocialAuthController.php` | Modify — inject OAuthHttpClient, delete stub |
-| `module.php` | Modify — see module.php wiring section below |
+| `module.php` | Modify — add to singletons |
 | `tests/Feature/OAuthHttpClientTest.php` | Create |
 
 ### Test Strategy
 
-Extract raw HTTP call into a protected `httpRequest()` method. Tests subclass `OAuthHttpClient` with a `FakeOAuthHttpClient` that returns canned responses. No real provider calls in tests.
+Extract raw HTTP call into a protected method so tests can subclass with canned responses. No real provider calls in tests.
 
 ### Test Cases
 
 1. Discord happy path — token + profile → normalized output
 2. Google happy path — ignores `id_token`
 3. GitHub happy path with public email
-4. GitHub private email fallback via `/user/emails`
+4. GitHub private email fallback via emails API
 5. Token exchange non-200 → `OAuthException`
 6. Token exchange missing `access_token` → `OAuthException`
 7. Profile endpoint failure → `OAuthException`
@@ -280,51 +241,21 @@ Extract raw HTTP call into a protected `httpRequest()` method. Tests subclass `O
 
 ---
 
-## Cross-Cutting: module.php Wiring
+## Cross-Cutting Concerns
 
-All new services must be registered in `app/foundation/module.php`:
+### module.php Wiring
 
-**Add to `singletons` array:**
-- `PasswordResetTokenRepository::class`
-- `PasswordResetService::class`
-- `OAuthHttpClient::class`
+All new services and repositories must be registered in `module.php`. `EmailVerificationService` needs a factory closure binding (scalar constructor params). The rest go in singletons. `MailerInterface` is already bound by `marko/mail-smtp`.
 
-**Add to `bindings` array** (factory closure — needed because of scalar constructor params):
-```
-EmailVerificationService::class => function ($container) {
-    return new EmailVerificationService(
-        mailer: $container->get(MailerInterface::class),
-        userRepository: $container->get(UserRepository::class),
-        view: $container->get(ViewInterface::class),
-        encryptionKey: config('encryption.key'),
-        appUrl: env('APP_URL', 'http://localhost:8001'),
-    );
-},
-```
+### Test Support: StubMailer
 
-`MailerInterface` is already bound by `marko/mail-smtp`'s module.php. `config/mail.php` already exists with Mailpit settings.
+A test double implementing `MailerInterface` that captures sent messages for assertion. Used by email verification and password reset tests.
 
----
-
-## Cross-Cutting: Test Support
-
-### `tests/Support/StubMailer.php`
-
-Implements `Marko\Mail\Contracts\MailerInterface`. Captures all sent messages for assertion:
-
-- `send(Message $message): bool` — appends to `$this->sent[]`, returns true
-- `sendRaw(string $to, string $raw): bool` — returns true
-- `public array $sent = []` — inspectable by tests
-
-Used by EmailVerificationTest and PasswordResetTest to assert emails were sent with correct recipient/subject without hitting SMTP.
-
----
-
-## Cross-Cutting: Controller Middleware
+### Controller Middleware
 
 | Controller | Middleware |
 |------------|-----------|
-| `EmailVerificationController` | `AuthMiddleware`, `SecurityHeadersMiddleware`, `CsrfMiddleware`, `RateLimitMiddleware` |
-| `PasswordResetController` | `SecurityHeadersMiddleware`, `CsrfMiddleware`, `RateLimitMiddleware` |
+| `EmailVerificationController` | Auth + Security Headers + CSRF + Rate Limit |
+| `PasswordResetController` | Security Headers + CSRF + Rate Limit |
 
-Password reset routes are unauthenticated (user forgot their password). Email verification routes require auth (user must be logged in to verify).
+Password reset routes are unauthenticated. Email verification routes require auth.
