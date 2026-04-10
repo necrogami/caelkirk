@@ -27,6 +27,16 @@
         </nav>
     </header>
 
+    {if isset($user) && $user->emailVerifiedAt === null}
+    <div class="bg-[#2a2518] border-b border-[#3a3528] px-6 py-1.5 flex items-center justify-between text-xs max-w-[640px] mx-auto">
+        <span class="text-[#d4a840]">Verify your email to secure your account.</span>
+        <form method="POST" action="/verify-email/resend" class="inline">
+            <input type="hidden" name="_token" value="{$csrfToken}">
+            <button type="submit" class="text-accent hover:text-accent-hover underline">Resend link</button>
+        </form>
+    </div>
+    {/if}
+
     <main class="max-w-[640px] mx-auto px-6 py-10">
         {block content}{/block}
     </main>

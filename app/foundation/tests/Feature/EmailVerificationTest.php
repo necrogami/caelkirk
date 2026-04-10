@@ -156,3 +156,69 @@ it('returns false for isVerified when emailVerifiedAt is null', function () {
 
     expect($service->isVerified($user))->toBeFalse();
 });
+
+use App\Foundation\Controller\Auth\EmailVerificationController;
+use App\Foundation\Tests\Support\StubCsrfTokenManager;
+use Marko\Routing\Http\Request;
+use Marko\Testing\Fake\FakeGuard;
+
+function makeVerificationController(
+    ?object $userRepo = null,
+    ?object $verificationService = null,
+    ?object $csrfTokenManager = null,
+    ?object $view = null,
+    ?object $guard = null,
+): EmailVerificationController {
+    return new EmailVerificationController(
+        userRepository: $userRepo ?? Mockery::mock(UserRepository::class),
+        verificationService: $verificationService ?? makeVerificationService(),
+        csrfTokenManager: $csrfTokenManager ?? new StubCsrfTokenManager(),
+        view: $view ?? makeStubViewForEmail(),
+        guard: $guard ?? new FakeGuard(),
+    );
+}
+
+it('redirects already-verified users to game on verify', function () {
+    $user = makeTestUserForVerification(verified: true);
+
+    $userRepo = Mockery::mock(UserRepository::class);
+    $userRepo->shouldReceive('find')->with(1)->andReturn($user);
+
+    $controller = makeVerificationController(userRepo: $userRepo);
+
+    $request = new Request(query: ['id' => '1', 'expires' => (string) (time() + 3600), 'signature' => 'any']);
+    $response = $controller->verify($request);
+
+    expect($response->statusCode())->toBe(302)
+        ->and($response->headers()['Location'])->toBe('/game');
+});
+
+it('renders error when user ID not found', function () {
+    $userRepo = Mockery::mock(UserRepository::class);
+    $userRepo->shouldReceive('find')->with(999)->andReturn(null);
+
+    $view = makeStubViewForEmail();
+    $controller = makeVerificationController(userRepo: $userRepo, view: $view);
+
+    $request = new Request(query: ['id' => '999', 'expires' => (string) (time() + 3600), 'signature' => 'any']);
+    $response = $controller->verify($request);
+
+    expect($response->statusCode())->toBe(200)
+        ->and($view->lastData['error'] ?? null)->not->toBeNull();
+});
+
+it('resend sends email and redirects for unverified user', function () {
+    $user = makeTestUserForVerification();
+    $guard = new FakeGuard();
+    $guard->setUser($user);
+
+    $mailer = new StubMailer();
+    $service = makeVerificationService(mailer: $mailer);
+    $controller = makeVerificationController(guard: $guard, verificationService: $service);
+
+    $request = new Request(post: ['_token' => 'test-csrf-token']);
+    $response = $controller->resend($request);
+
+    expect($response->statusCode())->toBe(302)
+        ->and($mailer->sent)->toHaveCount(1);
+});

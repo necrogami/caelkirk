@@ -1,0 +1,28 @@
+{layout 'foundation::layout/auth'}
+
+{block title}Verify Email — Shilla{/block}
+
+{block subtitle}Email verification{/block}
+
+{block content}
+<div class="space-y-4">
+    {if isset($error)}
+    <div class="bg-danger/10 border border-danger/30 rounded-md px-3 py-2 text-danger text-sm">
+        {$error}
+    </div>
+    {/if}
+
+    <p class="text-sm text-text-secondary">Check your email for a verification link, or request a new one.</p>
+
+    <form method="POST" action="/verify-email/resend">
+        <input type="hidden" name="_token" value="{$csrfToken}">
+        <button type="submit" class="w-full bg-accent hover:bg-accent-hover text-white font-medium py-2 rounded-md transition-colors duration-150">
+            Resend Verification Email
+        </button>
+    </form>
+</div>
+{/block}
+
+{block footer_link}
+<a href="/game" class="text-accent hover:text-accent-hover transition-colors duration-150">Back to game</a>
+{/block}
