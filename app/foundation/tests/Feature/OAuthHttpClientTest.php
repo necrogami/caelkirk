@@ -239,3 +239,33 @@ it('returns null email when GitHub emails entries are not arrays', function () {
 
     expect($profile['email'])->toBeNull();
 });
+
+it('controller catches OAuthException and redirects to login', function () {
+    $oauthClient = Mockery::mock(\App\Foundation\Service\OAuthHttpClient::class);
+    $oauthClient->shouldReceive('fetchProfile')
+        ->with('discord', 'bad-code')
+        ->andThrow(new OAuthException('Token exchange failed'));
+
+    $socialAuthService = Mockery::mock(\App\Foundation\Service\SocialAuthService::class);
+    $socialAuthService->shouldReceive('validateState')->with('valid-state')->andReturn(true);
+
+    $controller = new \App\Foundation\Controller\Auth\SocialAuthController(
+        view: new class implements \Marko\View\ViewInterface {
+            public function render(string $template, array $data = []): \Marko\Routing\Http\Response { return \Marko\Routing\Http\Response::html(''); }
+            public function renderToString(string $template, array $data = []): string { return ''; }
+        },
+        socialAuthService: $socialAuthService,
+        userRepository: Mockery::mock(\App\Foundation\Repository\UserRepository::class),
+        guard: new \Marko\Testing\Fake\FakeGuard(),
+        config: Mockery::mock(\Marko\Config\ConfigRepositoryInterface::class),
+        session: new \App\Foundation\Tests\Support\StubSession(),
+        csrfTokenManager: new \App\Foundation\Tests\Support\StubCsrfTokenManager(),
+        oauthClient: $oauthClient,
+    );
+
+    $request = new \Marko\Routing\Http\Request(query: ['code' => 'bad-code', 'state' => 'valid-state']);
+    $response = $controller->callback($request, 'discord');
+
+    expect($response->statusCode())->toBe(302)
+        ->and($response->headers()['Location'])->toBe('/login');
+});

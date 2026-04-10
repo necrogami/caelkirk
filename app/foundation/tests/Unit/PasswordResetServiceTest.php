@@ -222,3 +222,57 @@ it('resetPassword returns false for invalid token', function () {
 
     expect($result)->toBeFalse();
 });
+
+it('findValidToken returns token for valid hash', function () {
+    $token = new PasswordResetToken();
+    $token->id = 1;
+    $token->userId = 1;
+    $token->tokenHash = hash('sha256', str_repeat('c', 64));
+    $token->createdAt = new \DateTimeImmutable();
+
+    $tokenRepo = Mockery::mock(PasswordResetTokenRepository::class);
+    $tokenRepo->shouldReceive('findByTokenHash')
+        ->with(hash('sha256', str_repeat('c', 64)))
+        ->andReturn($token);
+
+    $service = new PasswordResetService(
+        userRepository: Mockery::mock(UserRepository::class),
+        tokenRepository: $tokenRepo,
+        hasher: makeStubHasherForReset(),
+        mailer: new StubMailer(),
+        view: makeStubViewForResetEmail(),
+        appUrl: 'http://localhost:8001',
+    );
+
+    $result = $service->findValidToken(str_repeat('c', 64));
+
+    expect($result)->toBeInstanceOf(PasswordResetToken::class)
+        ->and($result->userId)->toBe(1);
+});
+
+it('findValidToken returns null and deletes expired token', function () {
+    $token = new PasswordResetToken();
+    $token->id = 1;
+    $token->userId = 1;
+    $token->tokenHash = hash('sha256', str_repeat('d', 64));
+    $token->createdAt = new \DateTimeImmutable('-2 hours');
+
+    $tokenRepo = Mockery::mock(PasswordResetTokenRepository::class);
+    $tokenRepo->shouldReceive('findByTokenHash')
+        ->with(hash('sha256', str_repeat('d', 64)))
+        ->andReturn($token);
+    $tokenRepo->shouldReceive('deleteByUserId')->with(1)->once();
+
+    $service = new PasswordResetService(
+        userRepository: Mockery::mock(UserRepository::class),
+        tokenRepository: $tokenRepo,
+        hasher: makeStubHasherForReset(),
+        mailer: new StubMailer(),
+        view: makeStubViewForResetEmail(),
+        appUrl: 'http://localhost:8001',
+    );
+
+    $result = $service->findValidToken(str_repeat('d', 64));
+
+    expect($result)->toBeNull();
+});
