@@ -14,6 +14,7 @@ use App\Foundation\Service\PlayerService;
 use App\Foundation\Service\SocialAuthService;
 use App\Foundation\Service\CommandRegistry;
 use App\Foundation\Service\EmailVerificationService;
+use App\Foundation\Service\PasswordResetService;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\PermissionRegistry;
 use Marko\AdminAuth\Repository\AdminUserRepository;
@@ -44,6 +45,17 @@ return [
                 userRepository: $container->get(\App\Foundation\Repository\UserRepository::class),
                 view: $container->get(\Marko\View\ViewInterface::class),
                 encryptionKey: env('ENCRYPTION_KEY', ''),
+                appUrl: env('APP_URL', 'http://localhost:8001'),
+            );
+        },
+        // Password reset (factory — scalar constructor param)
+        PasswordResetService::class => function ($container) {
+            return new PasswordResetService(
+                userRepository: $container->get(\App\Foundation\Repository\UserRepository::class),
+                tokenRepository: $container->get(\App\Foundation\Repository\PasswordResetTokenRepository::class),
+                hasher: $container->get(\Marko\Hashing\Contracts\HasherInterface::class),
+                mailer: $container->get(\Marko\Mail\Contracts\MailerInterface::class),
+                view: $container->get(\Marko\View\ViewInterface::class),
                 appUrl: env('APP_URL', 'http://localhost:8001'),
             );
         },
