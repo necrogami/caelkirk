@@ -8,6 +8,7 @@ use App\Foundation\Repository\PlayerRepository;
 use App\Foundation\Repository\SocialAccountRepository;
 use App\Foundation\Repository\SystemConfigRepository;
 use App\Foundation\Repository\AnnouncementRepository;
+use App\Foundation\Repository\PasswordResetTokenRepository;
 use App\Foundation\Service\ConfigService;
 use App\Foundation\Service\PlayerService;
 use App\Foundation\Service\SocialAuthService;
@@ -53,6 +54,7 @@ return [
         SocialAccountRepository::class,
         SystemConfigRepository::class,
         AnnouncementRepository::class,
+        PasswordResetTokenRepository::class,
         ConfigService::class,
         PlayerService::class,
         SocialAuthService::class,
