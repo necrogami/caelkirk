@@ -1,0 +1,37 @@
+{layout 'foundation::layout/public'}
+
+{block title}FAQ — Shilla{/block}
+
+{block content}
+<h1 class="text-2xl font-semibold mb-6">Frequently Asked Questions</h1>
+
+<div class="space-y-4 max-w-prose" x-data="{ open: null }">
+    {var $faqs = [
+        ['What is Shilla?', 'Shilla is a browser-based multiplayer RPG. You explore rooms, fight monsters, collect loot, and interact with other players — all in your web browser. Think classic MUD meets modern web app.'],
+        ['Is it free to play?', 'Yes. Shilla is free to play with no pay-to-win mechanics.'],
+        ['What do I need to play?', 'A modern web browser and a desktop or laptop computer. Shilla is designed for screens 1024px or wider.'],
+        ['How does combat work?', 'Combat is turn-based. You and your enemy take turns choosing actions — attack, cast spells, use items, or flee. Strategy matters more than reflexes.'],
+        ['Can I play with friends?', 'Yes. Shilla is a shared persistent world. You can see other players in rooms, form parties, chat, trade, and join guilds together.'],
+        ['Is there PvP?', 'PvP is zone-based. Most of the world is safe, but certain regions are PvP-enabled. You can also duel other players anywhere by mutual consent.'],
+        ['Can I have multiple characters?', 'Yes. Each account can have multiple characters (up to a configurable limit). Switch between them from the character select screen.'],
+        ['How do I get started?', 'Register an account, create your first character by choosing a name, and you will be placed in the starting area. Explore from there.'],
+    ]}
+
+    {foreach $faqs as $index => $faq}
+    <div class="bg-twilight-surface border border-twilight-border rounded-md">
+        <button @click="open = open === {$index} ? null : {$index}"
+                class="w-full text-left px-4 py-3 flex items-center justify-between">
+            <span class="text-sm font-medium text-text-primary">{$faq[0]}</span>
+            <span class="text-text-muted text-xs" x-text="open === {$index} ? '&#9650;' : '&#9660;'"></span>
+        </button>
+        <div x-show="open === {$index}"
+             x-transition
+             class="px-4 pb-3 text-sm text-text-secondary">
+            {$faq[1]}
+        </div>
+    </div>
+    {/foreach}
+</div>
+
+<script src="/js/alpine.min.js" defer></script>
+{/block}

@@ -1,0 +1,59 @@
+<div x-data="commandPalette" x-cloak>
+    {* Backdrop *}
+    <div x-show="open"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="close()"
+         class="fixed inset-0 z-50 bg-black/50">
+    </div>
+
+    {* Panel *}
+    <div x-show="open"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="fixed left-1/2 top-[20%] -translate-x-1/2 z-50 w-[480px] max-h-[400px] bg-twilight-surface border border-twilight-border rounded-lg overflow-hidden flex flex-col">
+
+        {* Search input *}
+        <div class="border-b border-twilight-border">
+            <input x-ref="searchInput"
+                   x-model="query"
+                   @input="filter()"
+                   @keydown.arrow-up.prevent="navigate('up')"
+                   @keydown.arrow-down.prevent="navigate('down')"
+                   @keydown.enter.prevent="executeSelected()"
+                   type="text"
+                   placeholder="Type a command..."
+                   class="w-full bg-transparent px-4 py-3 text-text-primary placeholder-text-muted text-base focus:outline-none">
+        </div>
+
+        {* Results *}
+        <div class="overflow-y-auto flex-1">
+            <template x-for="(cmd, index) in filtered" :key="cmd.id">
+                <button @click="execute(cmd)"
+                        :class="index === selectedIndex ? 'bg-twilight-elevated border-l-2 border-accent' : 'border-l-2 border-transparent'"
+                        class="w-full text-left px-4 py-2 flex items-center justify-between hover:bg-twilight-elevated transition-colors duration-100">
+                    <span class="text-text-primary text-sm" x-text="cmd.label"></span>
+                    <span class="text-text-muted text-xs" x-text="cmd.context !== 'always' ? cmd.context : ''"></span>
+                </button>
+            </template>
+            <div x-show="filtered.length === 0 && query !== ''" class="px-4 py-3 text-text-muted text-sm">
+                No matching commands
+            </div>
+        </div>
+
+        {* Footer hint *}
+        <div class="border-t border-twilight-border px-4 py-1.5 flex items-center gap-4 text-text-muted text-xs">
+            <span>&#8593;&#8595; navigate</span>
+            <span>&#9166; select</span>
+            <span>esc close</span>
+        </div>
+    </div>
+</div>

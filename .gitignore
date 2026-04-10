@@ -1,1 +1,8 @@
+.env
+vendor/
+node_modules/
+public/css/app.css
+storage/
 .superpowers/
+.phpunit.cache/
+database/migrations/

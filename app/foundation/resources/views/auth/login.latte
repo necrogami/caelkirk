@@ -1,0 +1,53 @@
+{layout 'foundation::layout/auth'}
+
+{block title}Log In — Shilla{/block}
+
+{block subtitle}Welcome back{/block}
+
+{block content}
+<form method="POST" action="/login" class="space-y-4">
+    <input type="hidden" name="_token" value="{$csrfToken}">
+    {if isset($error)}
+    <div class="bg-danger/10 border border-danger/30 rounded-md px-3 py-2 text-danger text-sm">
+        {$error}
+    </div>
+    {/if}
+
+    <div>
+        <label for="identifier" class="block text-xs font-medium text-text-muted mb-1">Username or Email</label>
+        <input type="text" id="identifier" name="identifier" value="{$old['identifier'] ?? ''}"
+               class="w-full bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
+               placeholder="Enter your username or email" required>
+    </div>
+
+    <div>
+        <label for="password" class="block text-xs font-medium text-text-muted mb-1">Password</label>
+        <input type="password" id="password" name="password"
+               class="w-full bg-[#22222c] border border-twilight-border rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none transition-colors duration-150"
+               placeholder="Enter your password" required>
+    </div>
+
+    <div class="text-right">
+        <a href="/forgot-password" class="text-xs text-accent hover:text-accent-hover transition-colors duration-150">Forgot password?</a>
+    </div>
+
+    <button type="submit" class="w-full bg-accent hover:bg-accent-hover text-white font-medium py-2 rounded-md transition-colors duration-150">
+        Log In
+    </button>
+
+    <div class="relative my-4">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-twilight-border"></div></div>
+        <div class="relative flex justify-center text-xs"><span class="bg-twilight-surface px-2 text-text-muted">or continue with</span></div>
+    </div>
+
+    <div class="flex gap-2">
+        <a href="/auth/discord" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">Discord</a>
+        <a href="/auth/google" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">Google</a>
+        <a href="/auth/github" class="flex-1 bg-twilight-elevated border border-twilight-border rounded-md py-2 text-center text-sm text-text-secondary hover:text-text-primary transition-colors duration-150">GitHub</a>
+    </div>
+</form>
+{/block}
+
+{block footer_link}
+Don't have an account? <a href="/register" class="text-accent hover:text-accent-hover transition-colors duration-150">Register</a>
+{/block}

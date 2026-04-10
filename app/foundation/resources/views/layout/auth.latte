@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{block title}Shilla{/block}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+    {block head}{/block}
+</head>
+<body class="min-h-screen bg-twilight-bg text-text-primary font-['Inter',system-ui,sans-serif] flex items-center justify-center">
+    <div class="w-full max-w-[400px] px-6">
+        <div class="text-center mb-8">
+            <a href="/" class="text-accent font-semibold text-2xl tracking-wide">SHILLA</a>
+            <p class="text-text-muted text-sm mt-1">{block subtitle}Enter the realm{/block}</p>
+        </div>
+
+        <div class="bg-twilight-surface border border-twilight-border rounded-md p-6">
+            {block content}{/block}
+        </div>
+
+        <div class="text-center mt-4 text-sm text-text-muted">
+            {block footer_link}{/block}
+        </div>
+    </div>
+</body>
+</html>

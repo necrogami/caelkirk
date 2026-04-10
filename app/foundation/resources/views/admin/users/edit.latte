@@ -1,0 +1,88 @@
+<h2 class="text-lg font-semibold mb-4">Edit User: {$user->username}</h2>
+
+<div class="grid grid-cols-2 gap-6">
+    <div>
+        <form method="POST" action="/admin/users/{$user->id}" class="bg-[#24242e] border border-twilight-border rounded-md p-4 space-y-4">
+            <input type="hidden" name="_token" value="{$csrfToken}">
+            <div>
+                <label class="block text-xs text-text-muted mb-1">Email</label>
+                <div class="text-sm text-text-secondary">{$user->email}</div>
+            </div>
+
+            <div>
+                <label for="role" class="block text-xs text-text-muted mb-1">Role</label>
+                <select name="role" id="role" class="w-full bg-[#22222c] border border-twilight-border rounded px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none">
+                    <option value="player" {if $user->role === 'player'}selected{/if}>Player</option>
+                    <option value="builder" {if $user->role === 'builder'}selected{/if}>Builder</option>
+                    <option value="admin" {if $user->role === 'admin'}selected{/if}>Admin</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="character_slot_limit" class="block text-xs text-text-muted mb-1">Character Slot Limit (blank = global default)</label>
+                <input type="number" name="character_slot_limit" id="character_slot_limit" value="{$user->characterSlotLimit}"
+                       class="w-full bg-[#22222c] border border-twilight-border rounded px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+                       min="1" max="100">
+            </div>
+
+            <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded transition-colors duration-150">Save Changes</button>
+        </form>
+
+        <div class="mt-4 bg-[#24242e] border border-twilight-border rounded-md p-4">
+            <h3 class="font-medium text-sm mb-3">Account Status</h3>
+            {if $user->isBanned()}
+            <div class="flex items-center gap-3">
+                <span class="text-danger text-sm">Banned</span>
+                <form method="POST" action="/admin/users/{$user->id}/unban" class="inline">
+                    <input type="hidden" name="_token" value="{$csrfToken}">
+                    <button type="submit" class="text-stamina-dark text-xs hover:text-stamina">Unban</button>
+                </form>
+            </div>
+            {else}
+            <form method="POST" action="/admin/users/{$user->id}/ban">
+                <input type="hidden" name="_token" value="{$csrfToken}">
+                <button type="submit" class="bg-danger/80 hover:bg-danger text-white text-xs px-3 py-1 rounded transition-colors duration-150"
+                        onclick="return confirm('Are you sure you want to ban this user?')">Ban User</button>
+            </form>
+            {/if}
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="bg-[#24242e] border border-twilight-border rounded-md p-4">
+            <h3 class="font-medium text-sm mb-3">Characters</h3>
+            {if count($players) > 0}
+            <div class="space-y-2">
+                {foreach $players as $player}
+                <div class="flex justify-between text-sm">
+                    <span class="text-text-primary">{$player->name}</span>
+                    <span class="text-text-muted text-xs">Slot {$player->slotNumber}</span>
+                </div>
+                {/foreach}
+            </div>
+            {else}
+            <div class="text-text-muted text-sm">No characters</div>
+            {/if}
+        </div>
+
+        <div class="bg-[#24242e] border border-twilight-border rounded-md p-4">
+            <h3 class="font-medium text-sm mb-3">Linked Accounts</h3>
+            {if count($socials) > 0}
+            <div class="space-y-2">
+                {foreach $socials as $social}
+                <div class="flex justify-between text-sm">
+                    <span class="text-accent">{$social->provider|capitalize}</span>
+                    <span class="text-text-muted text-xs">{$social->providerEmail}</span>
+                </div>
+                {/foreach}
+            </div>
+            {else}
+            <div class="text-text-muted text-sm">No linked accounts</div>
+            {/if}
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="/admin/users" class="text-accent text-sm hover:text-accent-hover">&larr; Back to users</a>
+</div>

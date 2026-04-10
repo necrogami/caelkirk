@@ -1,0 +1,48 @@
+<h2 class="text-lg font-semibold mb-4">Users</h2>
+
+<div class="flex items-center gap-3 mb-4">
+    <form method="GET" action="/admin/users" class="flex gap-2 flex-1">
+        <input type="text" name="search" value="{$search}" placeholder="Search users..."
+               class="flex-1 bg-[#22222c] border border-twilight-border rounded px-3 py-1.5 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none">
+        <select name="role" class="bg-[#22222c] border border-twilight-border rounded px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none">
+            <option value="">All Roles</option>
+            <option value="player" {if $role === 'player'}selected{/if}>Player</option>
+            <option value="builder" {if $role === 'builder'}selected{/if}>Builder</option>
+            <option value="admin" {if $role === 'admin'}selected{/if}>Admin</option>
+        </select>
+        <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded transition-colors duration-150">Search</button>
+    </form>
+</div>
+
+<div class="bg-[#24242e] border border-twilight-border rounded-md overflow-hidden">
+    <div class="grid grid-cols-[2fr_1fr_1fr_100px] px-4 py-2 border-b border-[#2e2e3a] text-xs text-text-muted uppercase tracking-wider">
+        <span>User</span>
+        <span>Role</span>
+        <span>Characters</span>
+        <span>Actions</span>
+    </div>
+    {foreach $users as $user}
+    <div class="grid grid-cols-[2fr_1fr_1fr_100px] px-4 py-2.5 border-b border-[#2e2e3a] items-center text-sm">
+        <div>
+            <div class="text-text-primary">{$user->username}</div>
+            <div class="text-xs text-text-muted">{$user->email}</div>
+        </div>
+        <div>
+            {if $user->role === 'admin'}
+            <span class="bg-[#3a2a2a] text-[#c08080] text-xs px-2 py-0.5 rounded">{$user->role}</span>
+            {elseif $user->role === 'builder'}
+            <span class="bg-[#2a3a2a] text-player-name text-xs px-2 py-0.5 rounded">{$user->role}</span>
+            {else}
+            <span class="bg-[#2a2a44] text-accent text-xs px-2 py-0.5 rounded">{$user->role}</span>
+            {/if}
+        </div>
+        <span class="text-text-secondary">—</span>
+        <div class="flex gap-2">
+            <a href="/admin/users/{$user->id}/edit" class="text-accent text-xs hover:text-accent-hover">Edit</a>
+        </div>
+    </div>
+    {/foreach}
+    {if count($users) === 0}
+    <div class="px-4 py-6 text-center text-text-muted text-sm">No users found</div>
+    {/if}
+</div>

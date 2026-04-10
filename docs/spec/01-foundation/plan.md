@@ -3258,3 +3258,360 @@ Verify:
 git add -A
 git commit -m "Foundation complete: all systems verified"
 ```
+
+---
+
+## Task 22: Session & Auth Wiring
+
+**Added post-implementation:** The original plan missed the config files and UserProvider needed to make auth sessions actually persist through redirects.
+
+**Files:**
+- Create: `config/session.php`
+- Create: `config/authentication.php`
+- Create: `app/foundation/src/Provider/DatabaseUserProvider.php`
+- Modify: `app/foundation/module.php` (bind UserProviderInterface)
+- Modify: `app/foundation/resources/views/layout/game.latte` (fix Latte JS variable)
+
+- [x] **Step 1: Create `config/session.php`**
+
+Database session driver, 24h lifetime, `shilla_session` cookie name.
+
+- [x] **Step 2: Create `config/authentication.php`**
+
+Session guard as default, argon2id password driver.
+
+- [x] **Step 3: Create `DatabaseUserProvider`**
+
+Bridges `UserRepository` to `UserProviderInterface` — implements `retrieveById`, `retrieveByCredentials`, `validateCredentials`, `retrieveByRememberToken`, `updateRememberToken`.
+
+- [x] **Step 4: Bind `UserProviderInterface` in `module.php`**
+
+- [x] **Step 5: Fix Latte JS variable output**
+
+Latte doesn't allow `{$var}` inside JavaScript strings. Use `data-` attributes on the `<script>` tag instead.
+
+- [x] **Step 6: Verify end-to-end**
+
+Register → redirect to `/game` → game shell renders with session authenticated.
+
+---
+
+## Task 23: Missing Config Files
+
+**Added post-audit:** Package audit found several missing config files that packages need.
+
+**Files:**
+- Create: `config/view.php`
+- Create: `config/admin.php`
+- Create: `config/admin-auth.php`
+- Create: `config/security.php`
+- Create: `config/mail.php`
+- Create: `config/pubsub.php`
+- Create: `config/pubsub-pgsql.php`
+
+- [ ] **Step 1: Create `config/view.php`**
+
+```php
+return [
+    'cache_directory' => __DIR__ . '/../storage/views',
+    'extension' => '.latte',
+    'auto_refresh' => true,
+    'strict_types' => true,
+];
+```
+
+- [ ] **Step 2: Create `config/admin.php`**
+
+```php
+return [
+    'route_prefix' => '/admin',
+    'name' => 'Shilla Admin',
+];
+```
+
+- [ ] **Step 3: Create `config/admin-auth.php`**
+
+```php
+return [
+    'guard' => 'admin',
+    'super_admin_role' => 'super-admin',
+];
+```
+
+- [ ] **Step 4: Create `config/security.php`**
+
+```php
+return [
+    'csrf' => ['session_key' => '_csrf_token'],
+    'headers' => [
+        'X-Content-Type-Options' => 'nosniff',
+        'X-Frame-Options' => 'SAMEORIGIN',
+    ],
+];
+```
+
+- [ ] **Step 5: Create `config/mail.php`**
+
+```php
+return [
+    'driver' => env('MAIL_DRIVER', 'smtp'),
+    'from' => [
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@shilla.org'),
+        'name' => env('MAIL_FROM_NAME', 'Shilla'),
+    ],
+    'smtp' => [
+        'host' => env('MAIL_HOST', 'localhost'),
+        'port' => (int) env('MAIL_PORT', 1025),
+    ],
+];
+```
+
+- [ ] **Step 6: Create `config/pubsub.php` and `config/pubsub-pgsql.php`**
+
+```php
+// config/pubsub.php
+return [
+    'driver' => env('PUBSUB_DRIVER', 'pgsql'),
+    'prefix' => env('PUBSUB_PREFIX', 'shilla_'),
+];
+
+// config/pubsub-pgsql.php
+return [
+    'host' => env('PUBSUB_PGSQL_HOST', '127.0.0.1'),
+    'port' => (int) env('PUBSUB_PGSQL_PORT', 5432),
+    'user' => env('PUBSUB_PGSQL_USER', 'shilla'),
+    'password' => env('PUBSUB_PGSQL_PASSWORD', 'shilla'),
+    'database' => env('PUBSUB_PGSQL_DATABASE', 'shilla'),
+];
+```
+
+- [ ] **Step 7: Create `storage/views/` directory**
+
+```bash
+mkdir -p storage/views
+```
+
+- [ ] **Step 8: Verify dev server starts without config errors**
+
+```bash
+php -S localhost:8000 -t public/
+# Visit http://localhost:8000/ — should render without errors
+```
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add config/ storage/
+git commit -m "Add missing config files for all Marko packages"
+```
+
+---
+
+## Task 24: Character Creation Controller
+
+**Added post-audit:** The character creation form in `dashboard.latte` submits to `POST /game/characters` which has no controller. The "Play" button links to `GET /game/play/{id}` which also doesn't exist.
+
+**Files:**
+- Create: `app/foundation/src/Controller/Game/CharacterController.php`
+- Create: `app/foundation/tests/Feature/CharacterTest.php`
+
+- [ ] **Step 1: Write failing test**
+
+```php
+// Tests that:
+// - POST /game/characters creates a character and redirects to /game
+// - POST /game/characters rejects duplicate names
+// - POST /game/characters rejects when slot limit reached
+// - POST /game/characters requires authentication
+```
+
+- [ ] **Step 2: Implement CharacterController**
+
+```php
+class CharacterController
+{
+    #[Post('/game/characters')]
+    #[Middleware(AuthMiddleware::class)]
+    public function store(Request $request): Response
+    {
+        // Validate name, call PlayerService.createPlayer(), redirect to /game
+    }
+
+    #[Get('/game/play/{id}')]
+    #[Middleware(AuthMiddleware::class)]
+    public function play(int $id): Response
+    {
+        // Verify player belongs to current user
+        // Store active player ID in session
+        // Redirect to game shell (future: room view)
+        // For now: redirect to /game with player selected
+    }
+}
+```
+
+- [ ] **Step 3: Run tests**
+
+- [ ] **Step 4: Test in browser — create character, see it in list**
+
+- [ ] **Step 5: Commit**
+
+---
+
+## Task 25: Admin Panel Template Overrides
+
+**Added post-audit:** The admin panel renders with default unstyled Marko templates. Need to override 5 templates with twilight theme.
+
+**Override mechanism:** `admin-panel::layout/base` resolves to any module matching the `admin-panel` name suffix. We need a separate `app/admin-panel` module, OR we override via Marko Preferences on the controllers to render our own templates.
+
+**Approach:** Create `app/admin-panel` module that overrides the vendor templates. This is a minimal module — just `composer.json`, `module.php`, and `resources/views/`.
+
+**Files:**
+- Create: `app/admin-panel/composer.json`
+- Create: `app/admin-panel/module.php`
+- Create: `app/admin-panel/resources/views/layout/base.latte`
+- Create: `app/admin-panel/resources/views/partials/sidebar.latte`
+- Create: `app/admin-panel/resources/views/partials/flash.latte`
+- Create: `app/admin-panel/resources/views/dashboard/index.latte`
+- Create: `app/admin-panel/resources/views/auth/login.latte`
+
+- [ ] **Step 1: Create `app/admin-panel/composer.json`**
+
+```json
+{
+    "name": "app/admin-panel",
+    "type": "marko-module",
+    "extra": { "marko": { "module": true } }
+}
+```
+
+- [ ] **Step 2: Create twilight base layout**
+
+Override `layout/base.latte` with:
+- Twilight background (`#1a1a24` for admin, slightly darker)
+- Sidebar left (200px, `#20202a` bg, `#2e2e3a` border-right)
+- Main content area
+- Include `/css/app.css`
+- Include Inter font
+
+- [ ] **Step 3: Create twilight sidebar**
+
+Override `partials/sidebar.latte` with:
+- SHILLA logo + "Admin Panel" subtitle
+- Menu items grouped by section with section headers
+- Active item highlighting (left border accent)
+- Logged-in admin user info at bottom
+
+The sidebar receives `$menuItems` from the admin-panel framework. These are the MenuItems from our AdminSections (UserSection, SystemSection).
+
+- [ ] **Step 4: Create twilight dashboard**
+
+Override `dashboard/index.latte` with:
+- Stat cards grid (3 columns)
+- Widget rendering — inject widgets via the controller or pass them through template variables
+- Activity feed section
+- Twilight card styling
+
+- [ ] **Step 5: Create twilight login**
+
+Override `auth/login.latte` with:
+- Centered card layout matching our auth.latte style
+- Twilight form inputs
+- SHILLA branding
+
+- [ ] **Step 6: Create twilight flash messages**
+
+Override `partials/flash.latte` with twilight-styled alerts.
+
+- [ ] **Step 7: Register module in root composer.json autoload**
+
+- [ ] **Step 8: Rebuild CSS, verify admin panel renders with twilight theme**
+
+- [ ] **Step 9: Commit**
+
+---
+
+## Task 26: OAuth Token Exchange Implementation
+
+**Added post-audit:** `SocialAuthController::exchangeCodeForProfile()` is a stub returning null. Social login is completely non-functional.
+
+**Files:**
+- Modify: `app/foundation/src/Controller/Auth/SocialAuthController.php`
+- Modify: `composer.json` (add `guzzlehttp/guzzle`)
+
+- [ ] **Step 1: Install Guzzle**
+
+```bash
+composer require guzzlehttp/guzzle
+```
+
+- [ ] **Step 2: Implement `exchangeCodeForProfile()`**
+
+Replace the stub with real HTTP calls:
+1. POST to provider's token URL with code, client_id, client_secret, redirect_uri
+2. Extract access_token from response
+3. GET provider's user URL with the access_token
+4. Parse response into profile array (id, email, name)
+5. Each provider has a different response format — handle Discord, Google, GitHub separately
+
+- [ ] **Step 3: Write test for token exchange**
+
+Mock Guzzle client, verify correct URLs and parameters for each provider.
+
+- [ ] **Step 4: Test with real provider** (optional — requires credentials)
+
+- [ ] **Step 5: Commit**
+
+---
+
+## Task 27: E2E Tests for New Flows
+
+**Added post-audit:** E2E tests need to cover character creation and admin panel.
+
+**Files:**
+- Modify: `tests/e2e/example.spec.ts`
+
+- [ ] **Step 1: Add character creation tests**
+
+```typescript
+test('user can create a character', async ({ page }) => {
+  // Login as seeded player
+  // Fill character name, submit
+  // Verify character appears in list
+  // Verify "Play" button visible
+});
+
+test('character creation rejects duplicate name', async ({ page }) => {
+  // Create character, then try same name again
+  // Verify error message
+});
+```
+
+- [ ] **Step 2: Add admin panel tests**
+
+```typescript
+test('admin can log in to admin panel', async ({ page }) => {
+  // Navigate to /admin/login
+  // Fill admin@shilla.org / password
+  // Verify dashboard renders with twilight theme
+});
+
+test('admin can view user list', async ({ page }) => {
+  // Login to admin, navigate to /admin/users
+  // Verify user table renders
+});
+```
+
+- [ ] **Step 3: Run full E2E suite, all passing**
+
+- [ ] **Step 4: Commit**
+
+---
+
+## Task 28: Final Verification
+
+- [ ] **Step 1: Run Pest tests — all 41+ passing**
+- [ ] **Step 2: Run Playwright tests — all passing**
+- [ ] **Step 3: Manual smoke test of every flow from the spec's exit criteria**
+- [ ] **Step 4: Verify admin panel has twilight theme**
+- [ ] **Step 5: Verify character creation works end-to-end**
+- [ ] **Step 6: Push and update PR**
