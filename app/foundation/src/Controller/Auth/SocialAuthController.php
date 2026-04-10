@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Foundation\Controller\Auth;
 
+use App\Foundation\Exception\OAuthException;
 use App\Foundation\Repository\UserRepository;
+use App\Foundation\Service\OAuthHttpClient;
 use App\Foundation\Service\SocialAuthService;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Config\ConfigRepositoryInterface;
@@ -31,6 +33,7 @@ class SocialAuthController
         private readonly ConfigRepositoryInterface $config,
         private readonly SessionInterface $session,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        private readonly OAuthHttpClient $oauthClient,
     ) {}
 
     #[Get('/auth/{provider}')]
@@ -57,12 +60,9 @@ class SocialAuthController
             return Response::redirect('/login');
         }
 
-        // In a real implementation, exchange the code for a token and fetch user profile
-        // via HTTP calls to the provider's token and user endpoints.
-        // For now, this is a placeholder that would be filled with Guzzle/cURL calls.
-        $profile = $this->exchangeCodeForProfile($provider, $code);
-
-        if ($profile === null) {
+        try {
+            $profile = $this->oauthClient->fetchProfile($provider, $code);
+        } catch (OAuthException) {
             return Response::redirect('/login');
         }
 
@@ -140,16 +140,4 @@ class SocialAuthController
         return $this->config->getArray($key);
     }
 
-    /**
-     * Exchange OAuth code for user profile.
-     * This is a placeholder — real implementation uses HTTP client
-     * to call provider token + user endpoints.
-     */
-    private function exchangeCodeForProfile(string $provider, string $code): ?array
-    {
-        // TODO: Implement real OAuth token exchange with Guzzle/cURL
-        // This will be completed when we have provider credentials configured.
-        // For now, return null to prevent any unauthenticated access.
-        return null;
-    }
 }

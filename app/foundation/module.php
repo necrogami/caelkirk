@@ -13,6 +13,7 @@ use App\Foundation\Service\ConfigService;
 use App\Foundation\Service\PlayerService;
 use App\Foundation\Service\SocialAuthService;
 use App\Foundation\Service\CommandRegistry;
+use App\Foundation\Service\OAuthHttpClient;
 use App\Foundation\Service\EmailVerificationService;
 use App\Foundation\Service\PasswordResetService;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
@@ -71,5 +72,6 @@ return [
         PlayerService::class,
         SocialAuthService::class,
         CommandRegistry::class,
+        OAuthHttpClient::class,
     ],
 ];
