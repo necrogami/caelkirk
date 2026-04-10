@@ -14,10 +14,10 @@ No database table. The verification URL contains `id` (user ID), `expires` (Unix
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/verify-email` | Consume the signed URL (requires auth) |
+| GET | `/verify-email` | Consume the signed URL (unauthenticated — HMAC signature is the security) |
 | POST | `/verify-email/resend` | Resend verification email (requires auth) |
 
-Both routes require `AuthMiddleware` since the user must be logged in. Initial send happens inside `RegisterController::store()` after user creation.
+The verify route is unauthenticated — users click the link from email and shouldn't need to login first. The HMAC signature tied to the user ID provides security. The resend route requires auth (user must be logged in to request a new email). Initial send happens inside `RegisterController::store()` after user creation.
 
 ### Unverified User Policy: Soft Gate
 
@@ -258,20 +258,11 @@ A test double implementing `MailerInterface` that captures sent messages for ass
 
 | Controller | Middleware |
 |------------|-----------|
-| `EmailVerificationController` | Auth + Security Headers + CSRF + Rate Limit |
-| `PasswordResetController` | Security Headers + CSRF + Rate Limit |
+| `EmailVerificationController` | Security Headers + CSRF + Strict Rate Limit (5/10min) |
+| `PasswordResetController` | Security Headers + CSRF + Strict Rate Limit (5/10min) |
 
-Password reset routes are unauthenticated. Email verification routes require auth.
+Both controllers are unauthenticated (verify link from email, forgot password). Resend route checks auth manually via `$guard->check()` since it's on the same controller as the unauthenticated verify route.
 
 ### Rate Limit Values
 
-Framework default is 60 requests / 60 seconds per IP. Override where tighter limits are needed:
-
-| Endpoint | Limit | Notes |
-|----------|-------|-------|
-| `POST /verify-email/resend` | 3 / 10 min | Per authenticated user |
-| `POST /forgot-password` | 5 / 10 min | Per IP — anti-enumeration |
-| `POST /reset-password` | 5 / 10 min | Per IP |
-| OAuth routes | Framework default | 60 / 60s is fine for redirects |
-
-These values are initial and may be adjusted based on observed abuse patterns.
+Email verification and password reset controllers use `StrictRateLimitMiddleware` (5 requests / 10 minutes per IP). Login, register, and OAuth routes use the framework default (60 / 60s). These values are initial and may be adjusted based on observed abuse patterns.

@@ -476,30 +476,34 @@ Append to the existing test file:
 
 ```php
 use App\Foundation\Controller\Auth\EmailVerificationController;
+use App\Foundation\Repository\UserRepository;
 use App\Foundation\Tests\Support\StubCsrfTokenManager;
 use Marko\Routing\Http\Request;
 use Marko\Testing\Fake\FakeGuard;
 
 function makeVerificationController(
-    ?object $guard = null,
+    ?object $userRepo = null,
     ?object $verificationService = null,
     ?object $csrfTokenManager = null,
     ?object $view = null,
+    ?object $guard = null,
 ): EmailVerificationController {
     return new EmailVerificationController(
-        guard: $guard ?? new FakeGuard(),
+        userRepository: $userRepo ?? Mockery::mock(UserRepository::class),
         verificationService: $verificationService ?? makeVerificationService(),
         csrfTokenManager: $csrfTokenManager ?? new StubCsrfTokenManager(),
         view: $view ?? makeStubViewForEmail(),
+        guard: $guard ?? new FakeGuard(),
     );
 }
 
 it('redirects already-verified users to game on verify', function () {
     $user = makeTestUserForVerification(verified: true);
-    $guard = new FakeGuard();
-    $guard->setUser($user);
 
-    $controller = makeVerificationController(guard: $guard);
+    $userRepo = Mockery::mock(UserRepository::class);
+    $userRepo->shouldReceive('find')->with(1)->andReturn($user);
+
+    $controller = makeVerificationController(userRepo: $userRepo);
 
     $request = new Request(query: ['id' => '1', 'expires' => (string) (time() + 3600), 'signature' => 'any']);
     $response = $controller->verify($request);
@@ -508,13 +512,12 @@ it('redirects already-verified users to game on verify', function () {
         ->and($response->headers()['Location'])->toBe('/game');
 });
 
-it('rejects verification when user ID does not match', function () {
-    $user = makeTestUserForVerification();
-    $guard = new FakeGuard();
-    $guard->setUser($user);
+it('renders error when user ID not found', function () {
+    $userRepo = Mockery::mock(UserRepository::class);
+    $userRepo->shouldReceive('find')->with(999)->andReturn(null);
 
     $view = makeStubViewForEmail();
-    $controller = makeVerificationController(guard: $guard, view: $view);
+    $controller = makeVerificationController(userRepo: $userRepo, view: $view);
 
     $request = new Request(query: ['id' => '999', 'expires' => (string) (time() + 3600), 'signature' => 'any']);
     $response = $controller->verify($request);
@@ -554,11 +557,10 @@ declare(strict_types=1);
 
 namespace App\Foundation\Controller\Auth;
 
-use App\Foundation\Entity\User;
 use App\Foundation\Middleware\StrictRateLimitMiddleware;
+use App\Foundation\Repository\UserRepository;
 use App\Foundation\Service\EmailVerificationService;
 use Marko\Authentication\Contracts\GuardInterface;
-use Marko\Authentication\Middleware\AuthMiddleware;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
@@ -569,32 +571,32 @@ use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
-#[Middleware([AuthMiddleware::class, SecurityHeadersMiddleware::class, CsrfMiddleware::class, StrictRateLimitMiddleware::class])]
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class, StrictRateLimitMiddleware::class])]
 class EmailVerificationController
 {
     public function __construct(
-        private readonly GuardInterface $guard,
+        private readonly UserRepository $userRepository,
         private readonly EmailVerificationService $verificationService,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly ViewInterface $view,
+        private readonly GuardInterface $guard,
     ) {}
 
     #[Get('/verify-email')]
     public function verify(Request $request): Response
     {
-        /** @var User $user */
-        $user = $this->guard->user();
-
-        if ($this->verificationService->isVerified($user)) {
-            return Response::redirect('/game');
-        }
-
         $id = (int) $request->query('id', '0');
         $expires = (int) $request->query('expires', '0');
         $signature = $request->query('signature', '');
 
-        if ($id !== $user->id) {
+        $user = $this->userRepository->find($id);
+
+        if ($user === null) {
             return $this->renderError('Invalid verification link.');
+        }
+
+        if ($this->verificationService->isVerified($user)) {
+            return Response::redirect('/game');
         }
 
         if (!$this->verificationService->verify($user, $expires, $signature)) {
@@ -607,7 +609,10 @@ class EmailVerificationController
     #[Post('/verify-email/resend')]
     public function resend(Request $request): Response
     {
-        /** @var User $user */
+        if (!$this->guard->check()) {
+            return Response::redirect('/login');
+        }
+
         $user = $this->guard->user();
 
         if ($this->verificationService->isVerified($user)) {
@@ -2118,6 +2123,27 @@ it('throws OAuthException for unsupported provider', function () {
 
     $client->fetchProfile('linkedin', 'auth-code');
 })->throws(OAuthException::class);
+
+it('returns null email when GitHub emails entries are not arrays', function () {
+    $client = makeFakeClient([
+        'https://github.com/login/oauth/access_token' => [
+            'status' => 200,
+            'body' => json_encode(['access_token' => 'ghtok']),
+        ],
+        'https://api.github.com/user' => [
+            'status' => 200,
+            'body' => json_encode(['id' => 111, 'email' => null, 'login' => 'ghuser']),
+        ],
+        'https://api.github.com/user/emails' => [
+            'status' => 200,
+            'body' => json_encode(['not-an-array-of-objects']),
+        ],
+    ]);
+
+    $profile = $client->fetchProfile('github', 'auth-code');
+
+    expect($profile['email'])->toBeNull();
+});
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -2295,7 +2321,10 @@ class OAuthHttpClient
         }
 
         foreach ($emails as $entry) {
-            if (($entry['primary'] ?? false) && ($entry['verified'] ?? false)) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            if (($entry['primary'] ?? false) && ($entry['verified'] ?? false) && isset($entry['email'])) {
                 return $entry['email'];
             }
         }
