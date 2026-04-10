@@ -882,7 +882,7 @@ class PasswordResetToken extends Entity
     #[Column(primaryKey: true, autoIncrement: true)]
     public ?int $id = null;
 
-    #[Column(name: 'user_id')]
+    #[Column(name: 'user_id', references: 'users.id', onDelete: 'cascade')]
     public int $userId;
 
     #[Column(name: 'token_hash', length: 64)]
@@ -1347,13 +1347,22 @@ class PasswordResetService
 
 - [ ] **Step 5: Register in module.php**
 
-Add to `singletons` array:
+Add to `bindings` array (NOT singletons — has scalar `$appUrl` param that the container can't auto-resolve):
 
 ```php
 use App\Foundation\Service\PasswordResetService;
 
-// In 'singletons' array:
-PasswordResetService::class,
+// In 'bindings' array (factory closure — do NOT add to singletons):
+PasswordResetService::class => function ($container) {
+    return new PasswordResetService(
+        userRepository: $container->get(\App\Foundation\Repository\UserRepository::class),
+        tokenRepository: $container->get(\App\Foundation\Repository\PasswordResetTokenRepository::class),
+        hasher: $container->get(\Marko\Hashing\Contracts\HasherInterface::class),
+        mailer: $container->get(\Marko\Mail\Contracts\MailerInterface::class),
+        view: $container->get(\Marko\View\ViewInterface::class),
+        appUrl: env('APP_URL', 'http://localhost:8001'),
+    );
+},
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
@@ -1777,7 +1786,7 @@ class PasswordResetController
         $passwordConfirmation = $request->post('password_confirmation', '');
 
         $errors = $this->validator->validate($request->post(), [
-            'token' => ['required'],
+            'token' => ['required', 'regex:/^[a-f0-9]{64}$/'],
             'password' => ['required', 'min:8', 'max:255'],
         ]);
 
@@ -2283,7 +2292,6 @@ class OAuthHttpClient
 
         $responseBody = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
         curl_close($ch);
 
         if ($responseBody === false) {
@@ -2417,7 +2425,7 @@ git push
 
 These were flagged during plan review and confirmed as non-issues. Documented here so future review rounds don't re-flag them.
 
-- **Rate limit config:** `RateLimitMiddleware` uses framework defaults (60 req/60s). Custom per-route limits from the spec (3/10min, 5/10min) are tuning — functional without custom config. Can be refined post-implementation.
+- **Rate limit config:** `RateLimitMiddleware` uses framework defaults (60 req/60s per IP). This is already stricter than the spec's suggested 5/10min for auth routes. No custom per-route config needed.
 - **Router registration:** Marko auto-discovers routes from controller `#[Get/Post]` attributes. No route files needed. Confirmed by cross-checker against existing controllers.
 - **Test stubs:** `StubCsrfTokenManager` and `StubSession` already exist in `tests/Support/` from the hardening pass. Only `StubMailer` needs creation (Task 1).
 - **FakeGuard.setUser():** Confirmed to exist by cross-checker. Tests can set authenticated users.
