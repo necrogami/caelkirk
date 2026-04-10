@@ -12,6 +12,7 @@ use App\Foundation\Service\ConfigService;
 use App\Foundation\Service\PlayerService;
 use App\Foundation\Service\SocialAuthService;
 use App\Foundation\Service\CommandRegistry;
+use App\Foundation\Service\EmailVerificationService;
 use Marko\AdminAuth\Contracts\PermissionRegistryInterface;
 use Marko\AdminAuth\PermissionRegistry;
 use Marko\AdminAuth\Repository\AdminUserRepository;
@@ -35,6 +36,16 @@ return [
         AdminUserRepositoryInterface::class => AdminUserRepository::class,
         RoleRepositoryInterface::class => RoleRepository::class,
         PermissionRepositoryInterface::class => PermissionRepository::class,
+        // Email verification (factory — scalar constructor params)
+        EmailVerificationService::class => function ($container) {
+            return new EmailVerificationService(
+                mailer: $container->get(\Marko\Mail\Contracts\MailerInterface::class),
+                userRepository: $container->get(\App\Foundation\Repository\UserRepository::class),
+                view: $container->get(\Marko\View\ViewInterface::class),
+                encryptionKey: env('ENCRYPTION_KEY', ''),
+                appUrl: env('APP_URL', 'http://localhost:8001'),
+            );
+        },
     ],
     'singletons' => [
         UserRepository::class,

@@ -1,0 +1,8 @@
+{* app/foundation/resources/views/email/verify.latte *}
+<div style="font-family: Inter, system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #1a1a24; color: #c0c4d8; border-radius: 8px;">
+    <h1 style="color: #5a6aaa; font-size: 20px; margin: 0 0 16px 0;">Welcome to Shilla, {$username}</h1>
+    <p style="margin: 0 0 24px 0; line-height: 1.6;">Click the link below to verify your email address.</p>
+    <a href="{$url}" style="display: inline-block; background: #5a6aaa; color: #ffffff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Verify Email</a>
+    <p style="margin: 24px 0 0 0; font-size: 13px; color: #5a5a70;">This link expires in 1 hour. If you didn't create a Shilla account, ignore this email.</p>
+    <p style="margin: 12px 0 0 0; font-size: 12px; color: #5a5a70; word-break: break-all;">{$url}</p>
+</div>
