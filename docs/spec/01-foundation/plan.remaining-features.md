@@ -393,13 +393,13 @@ Expected: 8 tests pass.
 
 - [ ] **Step 6: Add factory binding to module.php**
 
-In `app/foundation/module.php`, add to the `bindings` array:
+In `app/foundation/module.php`, add to the `bindings` array (NOT singletons — this service needs a factory closure because of scalar constructor params `$encryptionKey` and `$appUrl` that the container can't auto-resolve):
 
 ```php
 use App\Foundation\Service\EmailVerificationService;
 use Marko\Mail\Contracts\MailerInterface;
 
-// In 'bindings' array:
+// In 'bindings' array (factory closure — do NOT add to singletons):
 EmailVerificationService::class => function ($container) {
     return new EmailVerificationService(
         mailer: $container->get(MailerInterface::class),
@@ -432,6 +432,7 @@ git commit -m "Add EmailVerificationService with HMAC-signed URLs"
 
 **Files:**
 - Create: `app/foundation/src/Controller/Auth/EmailVerificationController.php`
+- Create: `app/foundation/resources/views/auth/verify-email.latte`
 - Modify: `app/foundation/resources/views/layout/game.latte`
 - Modify: `app/foundation/resources/views/layout/lobby.latte`
 - Modify: `app/foundation/tests/Feature/EmailVerificationTest.php`
@@ -599,11 +600,40 @@ class EmailVerificationController
 }
 ```
 
-- [ ] **Step 4: Check if FakeGuard has setUser method**
+- [ ] **Step 4: Create verify-email.latte error/resend template**
 
-Run: `grep -n 'function setUser\|public.*user' vendor/marko/testing/src/Fake/FakeGuard.php`
+```latte
+{layout 'foundation::layout/auth'}
 
-If `setUser` doesn't exist, the test needs to use a different approach. The existing tests use `FakeGuard` without setting a user (they test controllers that don't call `$guard->user()`). Check the FakeGuard implementation and adjust the test factory accordingly — you may need to create a custom stub guard or use Mockery.
+{block title}Verify Email — Shilla{/block}
+
+{block subtitle}Email verification{/block}
+
+{block content}
+<div class="space-y-4">
+    {if isset($error)}
+    <div class="bg-danger/10 border border-danger/30 rounded-md px-3 py-2 text-danger text-sm">
+        {$error}
+    </div>
+    {/if}
+
+    <p class="text-sm text-text-secondary">Check your email for a verification link, or request a new one.</p>
+
+    <form method="POST" action="/verify-email/resend">
+        <input type="hidden" name="_token" value="{$csrfToken}">
+        <button type="submit" class="w-full bg-accent hover:bg-accent-hover text-white font-medium py-2 rounded-md transition-colors duration-150">
+            Resend Verification Email
+        </button>
+    </form>
+</div>
+{/block}
+
+{block footer_link}
+<a href="/game" class="text-accent hover:text-accent-hover transition-colors duration-150">Back to game</a>
+{/block}
+```
+
+Save to `app/foundation/resources/views/auth/verify-email.latte`.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -2130,7 +2160,12 @@ class OAuthHttpClient
         );
 
         if ($response['status'] !== 200) {
-            throw new OAuthException('Token exchange failed (HTTP ' . $response['status'] . ')');
+            $category = match (true) {
+                $response['status'] >= 500 => 'server error',
+                $response['status'] >= 400 => 'auth error',
+                default => 'unexpected status',
+            };
+            throw new OAuthException("Token exchange failed ({$category})");
         }
 
         $data = json_decode($response['body'], true);
@@ -2156,7 +2191,12 @@ class OAuthHttpClient
         $response = $this->httpRequest($userUrl, 'GET', $headers);
 
         if ($response['status'] !== 200) {
-            throw new OAuthException('Profile fetch failed (HTTP ' . $response['status'] . ')');
+            $category = match (true) {
+                $response['status'] >= 500 => 'server error',
+                $response['status'] >= 400 => 'auth error',
+                default => 'unexpected status',
+            };
+            throw new OAuthException("Profile fetch failed ({$category})");
         }
 
         $data = json_decode($response['body'], true);
@@ -2370,3 +2410,19 @@ git push
 **Placeholder scan:** No TBD/TODO/placeholder language found.
 
 **Type consistency:** Method signatures match across tasks. `fetchProfile` returns same shape everywhere. `EmailVerificationService.makeVerificationUrl` is public (tests call it directly). `PasswordResetService` constructor params consistent between service and test factories.
+
+---
+
+## Known Non-Issues (reviewed and dismissed)
+
+These were flagged during plan review and confirmed as non-issues. Documented here so future review rounds don't re-flag them.
+
+- **Rate limit config:** `RateLimitMiddleware` uses framework defaults (60 req/60s). Custom per-route limits from the spec (3/10min, 5/10min) are tuning — functional without custom config. Can be refined post-implementation.
+- **Router registration:** Marko auto-discovers routes from controller `#[Get/Post]` attributes. No route files needed. Confirmed by cross-checker against existing controllers.
+- **Test stubs:** `StubCsrfTokenManager` and `StubSession` already exist in `tests/Support/` from the hardening pass. Only `StubMailer` needs creation (Task 1).
+- **FakeGuard.setUser():** Confirmed to exist by cross-checker. Tests can set authenticated users.
+- **ENCRYPTION_KEY:** Already configured in `.env` and `config/encryption.php` from the hardening pass.
+- **Social auth auto-verify scope:** Only new users created via `handleCallback` "no match" branch are auto-verified. `verifyAndLink` and `linkToCurrentUser` are for existing users managing their linked accounts — email verification status doesn't change when linking.
+- **Email verification race condition:** Controller checks `isVerified()` before calling `verify()`. Second click on same link redirects harmlessly to `/game`.
+- **Token cleanup scheduling:** `deleteExpired()` exists for future cron use. Not Foundation scope.
+- **Password complexity:** Spec requires min 8 chars only. Not a bank.
