@@ -31,6 +31,8 @@ app/foundation/resources/views/email/password-reset.latte  — reset email templ
 app/foundation/src/Service/OAuthHttpClient.php             — cURL token exchange + profile fetch
 app/foundation/src/Exception/OAuthException.php            — OAuth-specific exception
 
+app/foundation/src/Middleware/StrictRateLimitMiddleware.php — 5 req/10min for sensitive auth routes
+
 app/foundation/tests/Support/StubMailer.php                — captures sent emails for testing
 app/foundation/tests/Feature/EmailVerificationTest.php
 app/foundation/tests/Feature/PasswordResetTest.php
@@ -93,11 +95,42 @@ class StubMailer implements MailerInterface
 Run: `./vendor/bin/pest --filter "it registers"` (any passing test — confirms autoload works)
 Expected: Tests still pass (no regressions).
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Create StrictRateLimitMiddleware**
+
+Auth routes that handle tokens and password resets need tighter rate limits than the framework default (60/60s). This subclass sets 5 requests per 10 minutes per IP.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Foundation\Middleware;
+
+use Marko\RateLimiting\Contracts\RateLimiterInterface;
+use Marko\RateLimiting\Middleware\RateLimitMiddleware;
+
+class StrictRateLimitMiddleware extends RateLimitMiddleware
+{
+    public function __construct(
+        RateLimiterInterface $limiter,
+    ) {
+        parent::__construct(
+            limiter: $limiter,
+            maxAttempts: 5,
+            decaySeconds: 600,
+        );
+    }
+}
+```
+
+Save to `app/foundation/src/Middleware/StrictRateLimitMiddleware.php`.
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add app/foundation/tests/Support/StubMailer.php
-git commit -m "Add StubMailer test double for email assertions"
+git add app/foundation/tests/Support/StubMailer.php \
+       app/foundation/src/Middleware/StrictRateLimitMiddleware.php
+git commit -m "Add StubMailer test double and StrictRateLimitMiddleware (5/10min)"
 ```
 
 ---
@@ -522,10 +555,10 @@ declare(strict_types=1);
 namespace App\Foundation\Controller\Auth;
 
 use App\Foundation\Entity\User;
+use App\Foundation\Middleware\StrictRateLimitMiddleware;
 use App\Foundation\Service\EmailVerificationService;
 use Marko\Authentication\Contracts\GuardInterface;
 use Marko\Authentication\Middleware\AuthMiddleware;
-use Marko\RateLimiting\Middleware\RateLimitMiddleware;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
@@ -536,7 +569,7 @@ use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\View\ViewInterface;
 
-#[Middleware([AuthMiddleware::class, SecurityHeadersMiddleware::class, CsrfMiddleware::class, RateLimitMiddleware::class])]
+#[Middleware([AuthMiddleware::class, SecurityHeadersMiddleware::class, CsrfMiddleware::class, StrictRateLimitMiddleware::class])]
 class EmailVerificationController
 {
     public function __construct(
@@ -1700,8 +1733,8 @@ declare(strict_types=1);
 
 namespace App\Foundation\Controller\Auth;
 
+use App\Foundation\Middleware\StrictRateLimitMiddleware;
 use App\Foundation\Service\PasswordResetService;
-use Marko\RateLimiting\Middleware\RateLimitMiddleware;
 use Marko\Routing\Attributes\Get;
 use Marko\Routing\Attributes\Middleware;
 use Marko\Routing\Attributes\Post;
@@ -1713,7 +1746,7 @@ use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\View\ViewInterface;
 
-#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class, RateLimitMiddleware::class])]
+#[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class, StrictRateLimitMiddleware::class])]
 class PasswordResetController
 {
     public function __construct(
@@ -2425,7 +2458,7 @@ git push
 
 These were flagged during plan review and confirmed as non-issues. Documented here so future review rounds don't re-flag them.
 
-- **Rate limit config:** `RateLimitMiddleware` uses framework defaults (60 req/60s per IP). This is already stricter than the spec's suggested 5/10min for auth routes. No custom per-route config needed.
+- **Rate limit config:** `StrictRateLimitMiddleware` (5 req/10min) used on email verification and password reset controllers. Default `RateLimitMiddleware` (60/60s) stays on login/register/social auth. Framework `#[Middleware]` attribute only takes class names so a subclass is needed for custom limits.
 - **Router registration:** Marko auto-discovers routes from controller `#[Get/Post]` attributes. No route files needed. Confirmed by cross-checker against existing controllers.
 - **Test stubs:** `StubCsrfTokenManager` and `StubSession` already exist in `tests/Support/` from the hardening pass. Only `StubMailer` needs creation (Task 1).
 - **FakeGuard.setUser():** Confirmed to exist by cross-checker. Tests can set authenticated users.
