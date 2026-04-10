@@ -19,6 +19,7 @@ use Marko\Security\Middleware\CsrfMiddleware;
 use Marko\Security\Middleware\SecurityHeadersMiddleware;
 use Marko\Validation\Contracts\ValidatorInterface;
 use Marko\View\ViewInterface;
+use App\Foundation\Service\EmailVerificationService;
 
 #[Middleware([SecurityHeadersMiddleware::class, CsrfMiddleware::class, RateLimitMiddleware::class])]
 class RegisterController
@@ -30,6 +31,7 @@ class RegisterController
         private readonly HasherInterface $hasher,
         private readonly ValidatorInterface $validator,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        private readonly EmailVerificationService $verificationService,
     ) {}
 
     #[Get('/register')]
@@ -86,6 +88,12 @@ class RegisterController
         $this->userRepository->save($user);
 
         $this->guard->login($user);
+
+        try {
+            $this->verificationService->sendVerificationEmail($user);
+        } catch (\Throwable) {
+            // Log but don't block registration
+        }
 
         return Response::redirect('/game');
     }

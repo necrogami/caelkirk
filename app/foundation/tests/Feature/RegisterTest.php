@@ -88,14 +88,24 @@ function makeRegisterController(
     ?object $guard = null,
     ?object $hasher = null,
     ?object $validator = null,
+    ?object $verificationService = null,
 ): RegisterController {
+    $stubMailer = new \App\Foundation\Tests\Support\StubMailer();
+    $stubView = $view ?? makeStubView();
     return new RegisterController(
-        view: $view ?? makeStubView(),
+        view: $stubView,
         userRepository: $userRepo ?? makeStubUserRepo(),
         guard: $guard ?? new FakeGuard(),
         hasher: $hasher ?? makeStubHasher(),
         validator: $validator ?? makeStubValidator(),
         csrfTokenManager: new StubCsrfTokenManager(),
+        verificationService: $verificationService ?? new \App\Foundation\Service\EmailVerificationService(
+            mailer: $stubMailer,
+            userRepository: $userRepo ?? makeStubUserRepo(),
+            view: $stubView,
+            encryptionKey: 'test-key',
+            appUrl: 'http://localhost:8001',
+        ),
     );
 }
 
@@ -200,4 +210,53 @@ it('rejects invalid input', function () {
     expect($response->statusCode())->toBe(200)
         ->and($view->lastData['errors'])->toBeInstanceOf(ValidationErrors::class)
         ->and($view->lastData['errors']->isNotEmpty())->toBeTrue();
+});
+
+use App\Foundation\Tests\Support\StubMailer;
+use App\Foundation\Service\EmailVerificationService;
+
+it('sends verification email after registration', function () {
+    $guard = new FakeGuard();
+    $userRepo = new class extends UserRepository {
+        public ?User $savedUser = null;
+        public function __construct() {}
+        public function findByEmail(string $email): ?User { return null; }
+        public function findByUsername(string $username): ?User { return null; }
+        public function save(\Marko\Database\Entity\Entity $entity): void {
+            $entity->id = 1;
+            $this->savedUser = $entity;
+        }
+    };
+    $mailer = new StubMailer();
+    $view = makeStubView();
+
+    $verificationService = new EmailVerificationService(
+        mailer: $mailer,
+        userRepository: $userRepo,
+        view: $view,
+        encryptionKey: 'test-key',
+        appUrl: 'http://localhost:8001',
+    );
+
+    $controller = new RegisterController(
+        view: $view,
+        userRepository: $userRepo,
+        guard: $guard,
+        hasher: makeStubHasher(),
+        validator: makeStubValidator(),
+        csrfTokenManager: new StubCsrfTokenManager(),
+        verificationService: $verificationService,
+    );
+
+    $request = new Request(post: [
+        'username' => 'newuser',
+        'email' => 'new@example.com',
+        'password' => 'SecurePass123!',
+    ]);
+
+    $response = $controller->store($request);
+
+    expect($response->statusCode())->toBe(302)
+        ->and($mailer->sent)->toHaveCount(1)
+        ->and($mailer->sent[0]->to[0]->email)->toBe('new@example.com');
 });

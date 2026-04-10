@@ -174,3 +174,23 @@ it('rejects unlink when it is the only login method', function () {
 
     $service->unlinkFromCurrentUser($user, 10);
 })->throws(\RuntimeException::class, 'Cannot unlink');
+
+it('sets emailVerifiedAt when creating social user', function () {
+    $userRepo = Mockery::mock(UserRepository::class);
+    $userRepo->shouldReceive('findByEmail')->with('new@example.com')->andReturn(null);
+    $userRepo->shouldReceive('findByUsername')->with('NewUser')->andReturn(null);
+    $userRepo->shouldReceive('save')->once()->andReturnUsing(function (User $user) {
+        $user->id = 99;
+        expect($user->emailVerifiedAt)->not->toBeNull();
+    });
+
+    $socialRepo = Mockery::mock(SocialAccountRepository::class);
+    $socialRepo->shouldReceive('findByProvider')->with('google', '99999')->andReturn(null);
+    $socialRepo->shouldReceive('save')->once();
+
+    $service = new SocialAuthService($userRepo, $socialRepo, makeSocialStubHasher(), new StubSession());
+
+    $result = $service->handleCallback('google', makeSocialProfile('99999', 'new@example.com', 'NewUser'));
+
+    expect($result['action'])->toBe('created');
+});
