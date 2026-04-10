@@ -24,7 +24,9 @@ use Marko\AdminAuth\Repository\PermissionRepository;
 use Marko\AdminAuth\Repository\PermissionRepositoryInterface;
 use Marko\AdminAuth\Repository\RoleRepository;
 use Marko\AdminAuth\Repository\RoleRepositoryInterface;
+use App\Foundation\Mail\StreamSocket;
 use Marko\Authentication\Contracts\UserProviderInterface;
+use Marko\Mail\Smtp\SocketInterface;
 use Marko\Session\Contracts\SessionHandlerInterface;
 use Marko\Session\Database\Handler\DatabaseSessionHandler;
 
@@ -39,6 +41,8 @@ return [
         AdminUserRepositoryInterface::class => AdminUserRepository::class,
         RoleRepositoryInterface::class => RoleRepository::class,
         PermissionRepositoryInterface::class => PermissionRepository::class,
+        // SMTP socket for mail transport
+        SocketInterface::class => StreamSocket::class,
         // Email verification (factory — scalar constructor params)
         EmailVerificationService::class => function ($container) {
             return new EmailVerificationService(
