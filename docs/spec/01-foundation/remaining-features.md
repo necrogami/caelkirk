@@ -201,7 +201,7 @@ GET the provider's user URL with a Bearer token. GitHub additionally requires a 
 | email | `email` | `email` | `email` (null if private → fallback) |
 | name | `username` | `name` | `login` |
 
-**GitHub email fallback:** If `email` is null (private), secondary request to GitHub's emails API to find the primary verified email.
+**GitHub email fallback:** If `email` is null (private), make a secondary GET to `https://api.github.com/user/emails` (requires `user:email` scope, already configured in `social_auth.php`). The response is an array of email objects with `email`, `primary`, and `verified` fields. Pick the first entry where both `primary` and `verified` are true. If no such entry exists or the request fails, treat email as null — the user will get a synthetic `@social.local` address.
 
 ### Error Handling
 
@@ -232,12 +232,15 @@ Extract raw HTTP call into a protected method so tests can subclass with canned 
 1. Discord happy path — token + profile → normalized output
 2. Google happy path — ignores `id_token`
 3. GitHub happy path with public email
-4. GitHub private email fallback via emails API
-5. Token exchange non-200 → `OAuthException`
-6. Token exchange missing `access_token` → `OAuthException`
-7. Profile endpoint failure → `OAuthException`
-8. Unsupported provider → `OAuthException`
-9. Controller catches `OAuthException` and redirects to `/login`
+4. GitHub private email fallback via emails API — picks primary verified email
+5. GitHub email fallback returns 403 (scope issue) → falls back to synthetic email
+6. GitHub email fallback returns empty array → falls back to synthetic email
+7. GitHub email fallback returns no primary verified entry → falls back to synthetic email
+8. Token exchange non-200 → `OAuthException`
+9. Token exchange missing `access_token` → `OAuthException`
+10. Profile endpoint failure → `OAuthException`
+11. Unsupported provider → `OAuthException`
+12. Controller catches `OAuthException` and redirects to `/login`
 
 ---
 
@@ -259,3 +262,16 @@ A test double implementing `MailerInterface` that captures sent messages for ass
 | `PasswordResetController` | Security Headers + CSRF + Rate Limit |
 
 Password reset routes are unauthenticated. Email verification routes require auth.
+
+### Rate Limit Values
+
+Framework default is 60 requests / 60 seconds per IP. Override where tighter limits are needed:
+
+| Endpoint | Limit | Notes |
+|----------|-------|-------|
+| `POST /verify-email/resend` | 3 / 10 min | Per authenticated user |
+| `POST /forgot-password` | 5 / 10 min | Per IP — anti-enumeration |
+| `POST /reset-password` | 5 / 10 min | Per IP |
+| OAuth routes | Framework default | 60 / 60s is fine for redirects |
+
+These values are initial and may be adjusted based on observed abuse patterns.
