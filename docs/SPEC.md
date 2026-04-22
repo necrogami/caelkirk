@@ -102,7 +102,7 @@ Hybrid server-rendered + lightweight client. Latte renders pages. SSE streams ga
 Marko skeleton, PostgreSQL, auth, role system (player/builder/admin), base module structure, Tailwind + Alpine.js pipeline, base Latte layout with game shell.
 
 **[02 — World Engine](spec/02-world-engine/README.md)**
-Zones, rooms, room connections as a relationship table, navigation UI, room rendering (description/exits/players/items/NPCs), player position tracking, zone properties (PvP flag, level range).
+Four-tier zone hierarchy (realm/province/region/area) with cascading properties, rooms with two-tier descriptions, unidirectional exits across 12 directions, compass navigation with fetch+swap, SSE fan-out for real-time occupant updates, minimap with fog of war, dark zones, structured zone atmosphere tags.
 
 **[03 — Character System](spec/03-character-system/README.md)**
 Races, classes, stat modifiers, core stats (STR/DEX/CON/INT/WIS/CHA), derived stats (HP/MP/attack/defense), leveling, inventory, equipment slots, character sheet UI.

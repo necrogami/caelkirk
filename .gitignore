@@ -4,5 +4,6 @@ node_modules/
 public/css/app.css
 storage/
 .superpowers/
+.serena/
 .phpunit.cache/
 database/migrations/
